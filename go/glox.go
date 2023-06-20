@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/fpotier/crafting-interpreters/go/ast"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/sean-/sysexits"
 )
@@ -13,6 +14,15 @@ import (
 var hadError = false
 
 func main() {
+	expr := ast.NewBinaryExpression(
+		ast.NewUnaryExpression(
+			*lexer.NewToken(lexer.DASH, "-", lexer.Literal{}, 1),
+			ast.NewLiteralExpression(lexer.Literal{NumberValue: 123, IsNumber: true})),
+		*lexer.NewToken(lexer.STAR, "*", lexer.Literal{}, 1),
+		ast.NewGroupingExpression(ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 45.67})))
+	printer := &ast.PrinterVisitor{}
+	fmt.Println(printer.Print(expr))
+
 	nbArgs := len(os.Args)
 	if nbArgs > 2 {
 		fmt.Println("Usage: glox [script]")
