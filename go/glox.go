@@ -51,32 +51,33 @@ func run(source_code string) {
 	}
 
 	fmt.Println((&visitor.LispPrinter{}).String(expr))
+	fmt.Println((&visitor.Interpreter{}).Eval(expr))
 }
 
 func main() {
-	expr := ast.NewBinaryExpression(
-		ast.NewUnaryExpression(
-			*lexer.NewToken(lexer.DASH, "-", nil, 1),
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 123})),
-		*lexer.NewToken(lexer.STAR, "*", nil, 1),
-		ast.NewGroupingExpression(ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 45.67})))
+	// expr := ast.NewBinaryExpression(
+	// 	ast.NewUnaryExpression(
+	// 		*lexer.NewToken(lexer.DASH, "-", nil, 1),
+	// 		ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 123})),
+	// 	*lexer.NewToken(lexer.STAR, "*", nil, 1),
+	// 	ast.NewGroupingExpression(ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 45.67})))
 
-	printer := &visitor.LispPrinter{}
-	fmt.Println(printer.String(expr))
+	// printer := &visitor.LispPrinter{}
+	// fmt.Println(printer.String(expr))
 
-	expr2 := ast.NewBinaryExpression(
-		ast.NewGroupingExpression(ast.NewBinaryExpression(
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 1}),
-			*lexer.NewToken(lexer.PLUS, "+", nil, 1),
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 2}))),
-		*lexer.NewToken(lexer.STAR, "*", nil, 1),
-		ast.NewGroupingExpression(ast.NewBinaryExpression(
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 4}),
-			*lexer.NewToken(lexer.DASH, "-", nil, 1),
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 3}))))
+	// expr2 := ast.NewBinaryExpression(
+	// 	ast.NewGroupingExpression(ast.NewBinaryExpression(
+	// 		ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 1}),
+	// 		*lexer.NewToken(lexer.PLUS, "+", nil, 1),
+	// 		ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 2}))),
+	// 	*lexer.NewToken(lexer.STAR, "*", nil, 1),
+	// 	ast.NewGroupingExpression(ast.NewBinaryExpression(
+	// 		ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 4}),
+	// 		*lexer.NewToken(lexer.DASH, "-", nil, 1),
+	// 		ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 3}))))
 
-	rpnPrinter := &visitor.RPNPrinter{}
-	fmt.Println(rpnPrinter.String(expr2))
+	// rpnPrinter := &visitor.RPNPrinter{}
+	// fmt.Println(rpnPrinter.String(expr2))
 
 	nbArgs := len(os.Args)
 	if nbArgs > 2 {

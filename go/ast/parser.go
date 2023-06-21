@@ -115,15 +115,18 @@ func (parser *Parser) unary() (Expression, error) {
 func (parser *Parser) primary() (Expression, error) {
 	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
 	if parser.match(lexer.FALSE) {
-		return NewLiteralExpression(&lexer.StringLiteral{Value: "false"}), nil
+		return NewLiteralExpression(&BooleanValue{Value: false}), nil
 	} else if parser.match(lexer.TRUE) {
-		return NewLiteralExpression(&lexer.StringLiteral{Value: "true"}), nil
+		return NewLiteralExpression(&BooleanValue{Value: true}), nil
 	} else if parser.match(lexer.NIL) {
-		return NewLiteralExpression(&lexer.StringLiteral{Value: "nil"}), nil
+		return NewLiteralExpression(&ObjectValue{Value: nil}), nil
 	}
 
-	if parser.match(lexer.NUMBER, lexer.STRING) {
-		return NewLiteralExpression(parser.previous().Literal), nil
+	// TODO: is there a better solution?
+	if parser.match(lexer.NUMBER) {
+		return NewLiteralExpression(&NumberValue{Value: parser.previous().Literal.(*lexer.NumberLiteral).Value}), nil
+	} else if parser.match(lexer.STRING) {
+		return NewLiteralExpression(&StringValue{Value: parser.previous().Literal.(*lexer.StringLiteral).Value}), nil
 	}
 
 	if parser.match(lexer.LEFT_PARANTHESIS) {

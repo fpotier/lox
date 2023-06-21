@@ -28,7 +28,7 @@ func (visitor *RPNPrinter) VisitGroupingExpression(groupingExpression *ast.Group
 }
 
 func (visitor *RPNPrinter) VisitLiteralExpression(literalExpression *ast.LiteralExpression) {
-	visitor.builder.WriteString(literalExpression.Value.String())
+	visitor.builder.WriteString(literalExpression.LoxValue().String())
 }
 
 func (visitor *RPNPrinter) VisitUnaryExpression(unaryExpression *ast.UnaryExpression) {
