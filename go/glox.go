@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/fpotier/crafting-interpreters/go/ast"
+	"github.com/fpotier/crafting-interpreters/go/ast/visitor"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/sean-/sysexits"
 )
@@ -20,8 +21,23 @@ func main() {
 			ast.NewLiteralExpression(lexer.Literal{NumberValue: 123, IsNumber: true})),
 		*lexer.NewToken(lexer.STAR, "*", lexer.Literal{}, 1),
 		ast.NewGroupingExpression(ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 45.67})))
-	printer := &ast.PrinterVisitor{}
-	fmt.Println(printer.Print(expr))
+
+	printer := &visitor.LispPrinter{}
+	fmt.Println(printer.String(expr))
+
+	expr2 := ast.NewBinaryExpression(
+		ast.NewGroupingExpression(ast.NewBinaryExpression(
+			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 1}),
+			*lexer.NewToken(lexer.PLUS, "+", lexer.Literal{}, 1),
+			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 2}))),
+		*lexer.NewToken(lexer.STAR, "*", lexer.Literal{}, 1),
+		ast.NewGroupingExpression(ast.NewBinaryExpression(
+			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 4}),
+			*lexer.NewToken(lexer.DASH, "-", lexer.Literal{}, 1),
+			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 3}))))
+
+	rpnPrinter := &visitor.RPNPrinter{}
+	fmt.Println(rpnPrinter.String(expr2))
 
 	nbArgs := len(os.Args)
 	if nbArgs > 2 {

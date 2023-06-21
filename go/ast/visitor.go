@@ -1,8 +1,8 @@
 package ast
 
 type Visitor interface {
-	VisitBinaryExpression(binaryExpression *BinaryExpression) interface{}
-	VisitGroupingExpression(groupingExpression *GroupingExpression) interface{}
-	VisitLiteralExpression(literalExpression *LiteralExpression) interface{}
-	VisitUnaryExpression(unaryExpression *UnaryExpression) interface{}
+	VisitBinaryExpression(binaryExpression *BinaryExpression)
+	VisitGroupingExpression(groupingExpression *GroupingExpression)
+	VisitLiteralExpression(literalExpression *LiteralExpression)
+	VisitUnaryExpression(unaryExpression *UnaryExpression)
 }
