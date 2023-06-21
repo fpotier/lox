@@ -5,7 +5,7 @@ import "fmt"
 type TokenType int8
 
 type Token struct {
-	Kind    TokenType
+	Type    TokenType
 	Lexeme  string
 	Literal Literal
 	Line    int
@@ -13,16 +13,20 @@ type Token struct {
 
 func NewToken(kind TokenType, lexeme string, literal Literal, line int) *Token {
 	return &Token{
-		Kind:    kind,
+		Type:    kind,
 		Lexeme:  lexeme,
 		Literal: literal,
 		Line:    line,
 	}
 }
 
+// TODO could be prettier
 func (token *Token) String() string {
-
-	return fmt.Sprintf("%v %v", tokenRepresentation[token.Kind], token.Literal.String())
+	if token.Literal != nil {
+		return fmt.Sprintf("%v (value:%v)", tokenRepresentation[token.Type], token.Literal.String())
+	} else {
+		return fmt.Sprintf("%v", tokenRepresentation[token.Type])
+	}
 }
 
 const (

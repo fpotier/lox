@@ -17,24 +17,24 @@ var hadError = false
 func main() {
 	expr := ast.NewBinaryExpression(
 		ast.NewUnaryExpression(
-			*lexer.NewToken(lexer.DASH, "-", lexer.Literal{}, 1),
-			ast.NewLiteralExpression(lexer.Literal{NumberValue: 123, IsNumber: true})),
-		*lexer.NewToken(lexer.STAR, "*", lexer.Literal{}, 1),
-		ast.NewGroupingExpression(ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 45.67})))
+			*lexer.NewToken(lexer.DASH, "-", nil, 1),
+			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 123})),
+		*lexer.NewToken(lexer.STAR, "*", nil, 1),
+		ast.NewGroupingExpression(ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 45.67})))
 
 	printer := &visitor.LispPrinter{}
 	fmt.Println(printer.String(expr))
 
 	expr2 := ast.NewBinaryExpression(
 		ast.NewGroupingExpression(ast.NewBinaryExpression(
-			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 1}),
-			*lexer.NewToken(lexer.PLUS, "+", lexer.Literal{}, 1),
-			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 2}))),
-		*lexer.NewToken(lexer.STAR, "*", lexer.Literal{}, 1),
+			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 1}),
+			*lexer.NewToken(lexer.PLUS, "+", nil, 1),
+			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 2}))),
+		*lexer.NewToken(lexer.STAR, "*", nil, 1),
 		ast.NewGroupingExpression(ast.NewBinaryExpression(
-			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 4}),
-			*lexer.NewToken(lexer.DASH, "-", lexer.Literal{}, 1),
-			ast.NewLiteralExpression(lexer.Literal{IsNumber: true, NumberValue: 3}))))
+			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 4}),
+			*lexer.NewToken(lexer.DASH, "-", nil, 1),
+			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 3}))))
 
 	rpnPrinter := &visitor.RPNPrinter{}
 	fmt.Println(rpnPrinter.String(expr2))
@@ -81,10 +81,12 @@ func runFile(filepath string) {
 func run(source_code string) {
 	lexer := lexer.NewLexer(source_code)
 	tokens := lexer.Tokens()
+	parser := ast.NewParser(tokens)
+	expr := parser.Parse()
 
-	for _, token := range tokens {
-		fmt.Println(token.String())
-	}
+	// TODO error handling
+
+	fmt.Println((&visitor.LispPrinter{}).String(expr))
 }
 
 func error(line int, message string) {

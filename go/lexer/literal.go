@@ -2,19 +2,22 @@ package lexer
 
 import "fmt"
 
-type Literal struct {
-	IsString    bool
-	StringValue string
-	IsNumber    bool
-	NumberValue float64
+type Literal interface {
+	String() string
 }
 
-func (literal *Literal) String() string {
-	if literal.IsNumber {
-		return fmt.Sprintf("(value:%v)", literal.NumberValue)
-	} else if literal.IsString {
-		return fmt.Sprintf("(value:'%v')", literal.StringValue)
-	} else {
-		return ""
-	}
+type StringLiteral struct {
+	Value string
+}
+
+func (literal *StringLiteral) String() string {
+	return literal.Value
+}
+
+type NumberLiteral struct {
+	Value float64
+}
+
+func (literal *NumberLiteral) String() string {
+	return fmt.Sprintf("%v", literal.Value)
 }

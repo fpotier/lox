@@ -28,13 +28,13 @@ func (lexer *Lexer) Tokens() []Token {
 		lexer.start = lexer.current
 		lexer.scanToken()
 	}
-	lexer.tokens = append(lexer.tokens, *NewToken(EOF, "", Literal{}, lexer.line))
+	lexer.tokens = append(lexer.tokens, *NewToken(EOF, "", nil, lexer.line))
 
 	return lexer.tokens
 }
 
 func (lexer *Lexer) addToken(kind TokenType) {
-	lexer.addTokenWithLiteral(kind, Literal{})
+	lexer.addTokenWithLiteral(kind, nil)
 }
 
 func (lexer *Lexer) addTokenWithLiteral(kind TokenType, literal Literal) {
@@ -178,7 +178,7 @@ func (lexer *Lexer) string() {
 
 	lexer.advance() // the closing "
 	stringValue := lexer.sourceCode[lexer.start+1 : lexer.current-1]
-	lexer.addTokenWithLiteral(STRING, Literal{IsString: true, StringValue: stringValue})
+	lexer.addTokenWithLiteral(STRING, &StringLiteral{Value: stringValue})
 }
 
 func (lexer *Lexer) number() {
@@ -194,7 +194,7 @@ func (lexer *Lexer) number() {
 
 	// TODO check return value
 	floatValue, _ := strconv.ParseFloat(lexer.sourceCode[lexer.start:lexer.current], 64)
-	lexer.addTokenWithLiteral(NUMBER, Literal{IsNumber: true, NumberValue: floatValue})
+	lexer.addTokenWithLiteral(NUMBER, &NumberLiteral{Value: floatValue})
 }
 
 func (lexer *Lexer) identifier() {
