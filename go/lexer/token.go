@@ -20,7 +20,6 @@ func NewToken(kind TokenType, lexeme string, literal Literal, line int) *Token {
 	}
 }
 
-// TODO could be prettier
 func (token *Token) String() string {
 	if token.Literal != nil {
 		return fmt.Sprintf("%v (value:%v)", tokenRepresentation[token.Type], token.Literal.String())

@@ -9,10 +9,49 @@ import (
 	"github.com/fpotier/crafting-interpreters/go/ast"
 	"github.com/fpotier/crafting-interpreters/go/ast/visitor"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
+	"github.com/fpotier/crafting-interpreters/go/loxerror"
 	"github.com/sean-/sysexits"
 )
 
-var hadError = false
+func RunPrompt() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print("> ")
+		scanner.Scan()
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+		if input := scanner.Text(); input == "exit" || len(input) == 0 {
+			break
+		}
+		run(scanner.Text())
+		loxerror.HadError = false
+	}
+}
+
+func RunFile(filepath string) {
+	sourceCode, err := os.ReadFile(filepath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	run(string(sourceCode))
+	if loxerror.HadError {
+		os.Exit(sysexits.DataErr)
+	}
+}
+
+func run(source_code string) {
+	lexer := lexer.NewLexer(source_code)
+	tokens := lexer.Tokens()
+	parser := ast.NewParser(tokens)
+	expr, err := parser.Parse()
+
+	if loxerror.HadError || err != nil {
+		return
+	}
+
+	fmt.Println((&visitor.LispPrinter{}).String(expr))
+}
 
 func main() {
 	expr := ast.NewBinaryExpression(
@@ -45,55 +84,8 @@ func main() {
 		os.Exit(sysexits.Usage)
 	} else if nbArgs == 2 {
 		fmt.Printf("Run file %v\n", os.Args[1])
-		runFile(os.Args[1])
+		RunFile(os.Args[1])
 	} else {
-		runPrompt()
+		RunPrompt()
 	}
-}
-
-func runPrompt() {
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Print("> ")
-		scanner.Scan()
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
-		if input := scanner.Text(); input == "exit" || len(input) == 0 {
-			break
-		}
-		run(scanner.Text())
-		hadError = false
-	}
-}
-
-func runFile(filepath string) {
-	sourceCode, err := os.ReadFile(filepath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	run(string(sourceCode))
-	if hadError {
-		os.Exit(sysexits.DataErr)
-	}
-}
-
-func run(source_code string) {
-	lexer := lexer.NewLexer(source_code)
-	tokens := lexer.Tokens()
-	parser := ast.NewParser(tokens)
-	expr := parser.Parse()
-
-	// TODO error handling
-
-	fmt.Println((&visitor.LispPrinter{}).String(expr))
-}
-
-func error(line int, message string) {
-	report(line, "", message)
-}
-
-func report(line int, where string, message string) {
-	fmt.Printf("[line %v] Error %v : %v\n", line, where, message)
-	hadError = true
 }

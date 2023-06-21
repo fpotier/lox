@@ -1,8 +1,10 @@
 package lexer
 
 import (
-	"log"
+	"fmt"
 	"strconv"
+
+	"github.com/fpotier/crafting-interpreters/go/loxerror"
 )
 
 type Lexer struct {
@@ -108,8 +110,7 @@ func (lexer *Lexer) scanToken() {
 		} else if isAlpha(c) {
 			lexer.identifier()
 		} else {
-			// TODO: find a way to use main.error
-			log.Fatalf("Unexpected character line %v", lexer.line)
+			loxerror.Error(lexer.line, fmt.Sprintf("Unexpected character '%c'", c))
 		}
 	}
 }
@@ -172,8 +173,7 @@ func (lexer *Lexer) string() {
 		lexer.advance()
 	}
 	if lexer.isAtEnd() {
-		// TODO: find a way to use main.error
-		log.Fatalf("Unterminated string line %v", lexer.line)
+		loxerror.Error(lexer.line, "Unterminated string")
 	}
 
 	lexer.advance() // the closing "
@@ -181,19 +181,26 @@ func (lexer *Lexer) string() {
 	lexer.addTokenWithLiteral(STRING, &StringLiteral{Value: stringValue})
 }
 
+// Lox number should only be of this form: (\d*)(\.?)(\d*)
 func (lexer *Lexer) number() {
 	for isDigit(lexer.peek()) {
 		lexer.advance()
 	}
+
 	if lexer.peek() == '.' && isDigit(lexer.peekNext()) {
+		// Consume the '.'
 		lexer.advance()
-	}
-	for isDigit(lexer.peek()) {
-		lexer.advance()
+
+		for isDigit(lexer.peek()) {
+			lexer.advance()
+		}
 	}
 
-	// TODO check return value
-	floatValue, _ := strconv.ParseFloat(lexer.sourceCode[lexer.start:lexer.current], 64)
+	floatValue, err := strconv.ParseFloat(lexer.sourceCode[lexer.start:lexer.current], 64)
+	if err != nil {
+		loxerror.Error(lexer.line, fmt.Sprintf("Error converting %v to float: %v", lexer.sourceCode[lexer.start:lexer.current], err))
+		return
+	}
 	lexer.addTokenWithLiteral(NUMBER, &NumberLiteral{Value: floatValue})
 }
 
