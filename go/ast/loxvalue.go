@@ -47,28 +47,6 @@ func (n *NumberValue) String() string {
 	return fmt.Sprintf("%v", n.Value)
 }
 
-func (n1 *NumberValue) Add(n2 *NumberValue) *NumberValue {
-	return &NumberValue{
-		Value: n1.Value + n2.Value,
-	}
-}
-
-func (n1 *NumberValue) Substract(n2 *NumberValue) *NumberValue {
-	return &NumberValue{
-		Value: n1.Value - n2.Value,
-	}
-}
-func (n1 *NumberValue) Multiply(n2 *NumberValue) *NumberValue {
-	return &NumberValue{
-		Value: n1.Value * n2.Value,
-	}
-}
-func (n1 *NumberValue) Divide(n2 *NumberValue) *NumberValue {
-	return &NumberValue{
-		Value: n1.Value / n2.Value,
-	}
-}
-
 type ObjectValue struct {
 	Value *map[string]LoxValue
 }

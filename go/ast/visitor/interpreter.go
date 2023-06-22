@@ -20,12 +20,23 @@ func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryEx
 	rhs := visitor.evaluate(binaryExpression.Rhs)
 
 	switch binaryExpression.Operator.Type {
+	case lexer.PLUS:
+		switch lhs := lhs.(type) {
+		case *ast.NumberValue:
+			if rhs, ok := rhs.(*ast.NumberValue); ok {
+				visitor.value = &ast.NumberValue{Value: lhs.Value + rhs.Value}
+			}
+		case *ast.StringValue:
+			if rhs, ok := rhs.(*ast.StringValue); ok {
+				visitor.value = &ast.StringValue{Value: lhs.Value + rhs.Value}
+			}
+		}
 	case lexer.DASH:
-		visitor.value = lhs.(*ast.NumberValue).Substract(rhs.(*ast.NumberValue))
+		visitor.value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value - rhs.(*ast.NumberValue).Value}
 	case lexer.STAR:
-		visitor.value = lhs.(*ast.NumberValue).Multiply(rhs.(*ast.NumberValue))
+		visitor.value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value * rhs.(*ast.NumberValue).Value}
 	case lexer.SLASH:
-		visitor.value = lhs.(*ast.NumberValue).Divide(rhs.(*ast.NumberValue))
+		visitor.value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value / rhs.(*ast.NumberValue).Value}
 	}
 }
 
