@@ -65,12 +65,3 @@ func (visitor *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
 
 	return newVisitor.value
 }
-
-func isTruthy(value interface{}) bool {
-	switch value := value.(type) {
-	case bool:
-		return value
-	default:
-		return value != nil
-	}
-}
