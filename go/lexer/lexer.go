@@ -174,6 +174,7 @@ func (lexer *Lexer) string() {
 	}
 	if lexer.isAtEnd() {
 		loxerror.Error(lexer.line, "Unterminated string")
+		return
 	}
 
 	lexer.advance() // the closing "
