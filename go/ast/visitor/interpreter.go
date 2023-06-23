@@ -1,8 +1,11 @@
 package visitor
 
 import (
+	"fmt"
+
 	"github.com/fpotier/crafting-interpreters/go/ast"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
+	"github.com/fpotier/crafting-interpreters/go/loxerror"
 )
 
 type Interpreter struct {
@@ -11,6 +14,17 @@ type Interpreter struct {
 }
 
 func (visitor *Interpreter) Eval(expression ast.Expression) interface{} {
+	// This allows us to emulate a try/catch mechanism to exit the visitor as soon as possible
+	// without changing the Visit...() methods to return an error and propagate manually these errors
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(loxerror.RuntimeError); ok {
+				fmt.Println(err)
+				return
+			}
+			panic(r)
+		}
+	}()
 	expression.Accept(visitor)
 	return visitor.value
 }
@@ -25,6 +39,8 @@ func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryEx
 		case *ast.NumberValue:
 			if rhs, ok := rhs.(*ast.NumberValue); ok {
 				visitor.value = &ast.NumberValue{Value: lhs.Value + rhs.Value}
+			} else {
+				panic(loxerror.RuntimeError{Message: "invalid operand type: Number + String"})
 			}
 		case *ast.StringValue:
 			if rhs, ok := rhs.(*ast.StringValue); ok {
