@@ -4,68 +4,72 @@ import "fmt"
 
 type LoxValue interface {
 	IsBoolean() bool
-	AsBoolean() BooleanValue
 	IsNumber() bool
-	AsNumber() NumberValue
 	IsString() bool
-	AsString() StringValue
 	IsTruthy() bool
 	String() string
+	Equals(v LoxValue) bool
 }
 
-type BooleanValue struct {
-	Value bool
-}
+type BooleanValue struct{ Value bool }
 
-func (b BooleanValue) IsBoolean() bool {
-	return true
-}
-
-func (b BooleanValue) IsTruthy() bool {
-	return b.Value
-}
-
-func (b BooleanValue) String() string {
-	if b.Value {
-		return "true"
+func NewBooleanValue(v bool) *BooleanValue { return &BooleanValue{Value: v} }
+func (b BooleanValue) IsBoolean() bool     { return true }
+func (b BooleanValue) IsNumber() bool      { return false }
+func (b BooleanValue) IsString() bool      { return false }
+func (b BooleanValue) IsTruthy() bool      { return b.Value }
+func (b BooleanValue) String() string      { return fmt.Sprintf("%v", b.Value) }
+func (b BooleanValue) Equals(v LoxValue) bool {
+	if v.IsBoolean() {
+		return b.Value == v.(*BooleanValue).Value
 	} else {
-		return "false"
+		return false
 	}
 }
 
-type StringValue struct {
-	Value string
+type StringValue struct{ Value string }
+
+func NewStringValue(v string) *StringValue { return &StringValue{Value: v} }
+func (s StringValue) IsBoolean() bool      { return false }
+func (s StringValue) IsNumber() bool       { return false }
+func (s StringValue) IsString() bool       { return true }
+func (s StringValue) IsTruthy() bool       { return true }
+func (s StringValue) String() string       { return s.Value }
+func (s StringValue) Equals(v LoxValue) bool {
+	if v.IsString() {
+		return s.Value == v.(*StringValue).Value
+	} else {
+		return false
+	}
 }
 
-func (s *StringValue) IsTruthy() bool {
-	return true
+type NumberValue struct{ Value float64 }
+
+func NewNumberValue(v float64) *NumberValue { return &NumberValue{Value: v} }
+func (n NumberValue) IsBoolean() bool       { return false }
+func (n NumberValue) IsNumber() bool        { return true }
+func (n NumberValue) IsString() bool        { return false }
+func (n NumberValue) IsTruthy() bool        { return true }
+func (n NumberValue) String() string        { return fmt.Sprintf("%v", n.Value) }
+func (n NumberValue) Equals(v LoxValue) bool {
+	if v.IsNumber() {
+		return n.Value == v.(*NumberValue).Value
+	} else {
+		return false
+	}
 }
 
-func (s *StringValue) String() string {
-	return s.Value
-}
+type ObjectValue struct{ Value *map[string]LoxValue }
 
-type NumberValue struct {
-	Value float64
-}
-
-func (n *NumberValue) IsTruthy() bool {
-	return true
-}
-
-func (n *NumberValue) String() string {
-	return fmt.Sprintf("%v", n.Value)
-}
-
-type ObjectValue struct {
-	Value *map[string]LoxValue
-}
-
-func (o *ObjectValue) IsTruthy() bool {
-	return o.Value != nil
-}
-
-func (o *ObjectValue) String() string {
+func (o ObjectValue) IsBoolean() bool { return false }
+func (o ObjectValue) IsNumber() bool  { return false }
+func (o ObjectValue) IsString() bool  { return false }
+func (o ObjectValue) IsTruthy() bool  { return o.Value != nil }
+func (o ObjectValue) String() string {
 	// TODO: string representation of objects
 	return "TODO"
+}
+func (o ObjectValue) Equals(v LoxValue) bool {
+	// TODO implement
+	return false
 }

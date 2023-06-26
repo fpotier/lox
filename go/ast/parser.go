@@ -20,7 +20,7 @@ func (parser *Parser) expression() (Expression, error) {
 	return parser.equality()
 }
 
-//equality -> comparison ( ( "!=" | "==" ) comparison ) *
+// equality -> comparison ( ( "!=" | "==" ) comparison ) *
 func (parser *Parser) equality() (Expression, error) {
 	expr, err := parser.comparison()
 	if err != nil {
@@ -115,9 +115,9 @@ func (parser *Parser) unary() (Expression, error) {
 func (parser *Parser) primary() (Expression, error) {
 	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
 	if parser.match(lexer.FALSE) {
-		return NewLiteralExpression(&BooleanValue{Value: false}), nil
+		return NewLiteralExpression(NewBooleanValue(false)), nil
 	} else if parser.match(lexer.TRUE) {
-		return NewLiteralExpression(&BooleanValue{Value: true}), nil
+		return NewLiteralExpression(NewBooleanValue(true)), nil
 	} else if parser.match(lexer.NIL) {
 		return NewLiteralExpression(&ObjectValue{Value: nil}), nil
 	}
