@@ -47,12 +47,17 @@ func run(source_code string) {
 	expr, err := parser.Parse()
 
 	if loxerror.HadError || err != nil {
+		fmt.Println(err)
 		return
 	}
 
 	fmt.Println((&visitor.LispPrinter{}).String(expr))
 	fmt.Println((&visitor.RPNPrinter{}).String(expr))
-	fmt.Println((&visitor.Interpreter{}).Eval(expr))
+	interpreter := visitor.Interpreter{}
+	interpreter.Eval(expr)
+	if !interpreter.HadError {
+		fmt.Println(interpreter.Value)
+	}
 }
 
 func main() {

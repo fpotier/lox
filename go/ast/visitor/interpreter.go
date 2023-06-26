@@ -2,6 +2,7 @@ package visitor
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/fpotier/crafting-interpreters/go/ast"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
@@ -9,8 +10,9 @@ import (
 )
 
 type Interpreter struct {
-	// value can be virtually anything (string, number, boolean, object, nil, etc.)
-	value ast.LoxValue
+	// Value can be virtually anything (string, number, boolean, object, nil, etc.)
+	Value    ast.LoxValue
+	HadError bool
 }
 
 func (visitor *Interpreter) Eval(expression ast.Expression) interface{} {
@@ -19,6 +21,7 @@ func (visitor *Interpreter) Eval(expression ast.Expression) interface{} {
 	defer func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(loxerror.RuntimeError); ok {
+				visitor.HadError = true
 				fmt.Println(err)
 				return
 			}
@@ -26,7 +29,7 @@ func (visitor *Interpreter) Eval(expression ast.Expression) interface{} {
 		}
 	}()
 	expression.Accept(visitor)
-	return visitor.value
+	return visitor.Value
 }
 
 func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpression) {
@@ -35,33 +38,38 @@ func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryEx
 
 	switch binaryExpression.Operator.Type {
 	case lexer.PLUS:
-		switch lhs := lhs.(type) {
-		case *ast.NumberValue:
-			if rhs, ok := rhs.(*ast.NumberValue); ok {
-				visitor.value = &ast.NumberValue{Value: lhs.Value + rhs.Value}
-			} else {
-				panic(loxerror.RuntimeError{Message: "invalid operand type: Number + String"})
+		if isNumber(lhs) && isNumber(rhs) {
+			visitor.Value = &ast.NumberValue{
+				Value: lhs.(*ast.NumberValue).Value + rhs.(*ast.NumberValue).Value,
 			}
-		case *ast.StringValue:
-			if rhs, ok := rhs.(*ast.StringValue); ok {
-				visitor.value = &ast.StringValue{Value: lhs.Value + rhs.Value}
+		} else if isString(lhs) && isString(rhs) {
+			visitor.Value = &ast.StringValue{
+				Value: lhs.(*ast.StringValue).Value + rhs.(*ast.StringValue).Value,
 			}
+		} else {
+			// TODO: print lox types instead of go types
+			panic(loxerror.RuntimeError{
+				Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v", binaryExpression.Operator.Lexeme, reflect.TypeOf(lhs), reflect.TypeOf(rhs)),
+			})
 		}
 	case lexer.DASH:
-		visitor.value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value - rhs.(*ast.NumberValue).Value}
+		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
+		visitor.Value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value - rhs.(*ast.NumberValue).Value}
 	case lexer.STAR:
-		visitor.value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value * rhs.(*ast.NumberValue).Value}
+		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
+		visitor.Value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value * rhs.(*ast.NumberValue).Value}
 	case lexer.SLASH:
-		visitor.value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value / rhs.(*ast.NumberValue).Value}
+		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
+		visitor.Value = &ast.NumberValue{Value: lhs.(*ast.NumberValue).Value / rhs.(*ast.NumberValue).Value}
 	}
 }
 
 func (visitor *Interpreter) VisitGroupingExpression(groupingExpression *ast.GroupingExpression) {
-	visitor.value = visitor.evaluate(groupingExpression.Expr)
+	visitor.Value = visitor.evaluate(groupingExpression.Expr)
 }
 
 func (visitor *Interpreter) VisitLiteralExpression(literalExpression *ast.LiteralExpression) {
-	visitor.value = literalExpression.LoxValue()
+	visitor.Value = literalExpression.LoxValue()
 }
 
 func (visitor *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpression) {
@@ -69,9 +77,10 @@ func (visitor *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpre
 
 	switch unaryExpression.Operator.Type {
 	case lexer.BANG:
-		visitor.value = &ast.BooleanValue{Value: !rhs.IsTruthy()}
+		visitor.Value = &ast.BooleanValue{Value: !rhs.IsTruthy()}
 	case lexer.DASH:
-		visitor.value = &ast.NumberValue{Value: -rhs.(*ast.NumberValue).Value}
+		assertNumberOperand(unaryExpression.Operator, rhs)
+		visitor.Value = &ast.NumberValue{Value: -rhs.(*ast.NumberValue).Value}
 	}
 }
 
@@ -79,5 +88,33 @@ func (visitor *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
 	newVisitor := &Interpreter{}
 	expression.Accept(newVisitor)
 
-	return newVisitor.value
+	return newVisitor.Value
+}
+
+func isNumber(value ast.LoxValue) bool {
+	_, ok := value.(*ast.NumberValue)
+	return ok
+}
+
+func isString(value ast.LoxValue) bool {
+	_, ok := value.(*ast.StringValue)
+	return ok
+}
+
+func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxValue) {
+	if !isNumber(lhs) || !isNumber(rhs) {
+		panic(loxerror.RuntimeError{
+			// TODO: print lox types instead of go types
+			Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v", operator.Lexeme, reflect.TypeOf(lhs), reflect.TypeOf(rhs)),
+		})
+	}
+}
+
+func assertNumberOperand(operator lexer.Token, rhs ast.LoxValue) {
+	if !isNumber(rhs) {
+		panic(loxerror.RuntimeError{
+			// TODO: print lox types instead of go types
+			Message: fmt.Sprintf("Operator '%v': incompatible type %v", operator.Lexeme, reflect.TypeOf(rhs)),
+		})
+	}
 }

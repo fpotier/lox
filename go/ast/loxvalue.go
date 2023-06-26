@@ -3,6 +3,12 @@ package ast
 import "fmt"
 
 type LoxValue interface {
+	IsBoolean() bool
+	AsBoolean() BooleanValue
+	IsNumber() bool
+	AsNumber() NumberValue
+	IsString() bool
+	AsString() StringValue
 	IsTruthy() bool
 	String() string
 }
@@ -11,11 +17,15 @@ type BooleanValue struct {
 	Value bool
 }
 
-func (b *BooleanValue) IsTruthy() bool {
+func (b BooleanValue) IsBoolean() bool {
+	return true
+}
+
+func (b BooleanValue) IsTruthy() bool {
 	return b.Value
 }
 
-func (b *BooleanValue) String() string {
+func (b BooleanValue) String() string {
 	if b.Value {
 		return "true"
 	} else {
