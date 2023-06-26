@@ -24,7 +24,7 @@ func (visitor *LispPrinter) VisitGroupingExpression(groupingExpression *ast.Grou
 }
 
 func (visitor *LispPrinter) VisitLiteralExpression(literalExpression *ast.LiteralExpression) {
-	visitor.builder.WriteString(literalExpression.Value.String())
+	visitor.builder.WriteString(literalExpression.LoxValue().String())
 }
 
 func (visitor *LispPrinter) VisitUnaryExpression(unaryExpression *ast.UnaryExpression) {

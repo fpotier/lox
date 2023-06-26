@@ -47,37 +47,19 @@ func run(source_code string) {
 	expr, err := parser.Parse()
 
 	if loxerror.HadError || err != nil {
-		return
+		fmt.Println(err)
 	}
 
 	fmt.Println((&visitor.LispPrinter{}).String(expr))
+	fmt.Println((&visitor.RPNPrinter{}).String(expr))
+	interpreter := visitor.Interpreter{}
+	interpreter.Eval(expr)
+	if !interpreter.HadRuntimeError {
+		fmt.Println(interpreter.Value)
+	}
 }
 
 func main() {
-	expr := ast.NewBinaryExpression(
-		ast.NewUnaryExpression(
-			*lexer.NewToken(lexer.DASH, "-", nil, 1),
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 123})),
-		*lexer.NewToken(lexer.STAR, "*", nil, 1),
-		ast.NewGroupingExpression(ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 45.67})))
-
-	printer := &visitor.LispPrinter{}
-	fmt.Println(printer.String(expr))
-
-	expr2 := ast.NewBinaryExpression(
-		ast.NewGroupingExpression(ast.NewBinaryExpression(
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 1}),
-			*lexer.NewToken(lexer.PLUS, "+", nil, 1),
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 2}))),
-		*lexer.NewToken(lexer.STAR, "*", nil, 1),
-		ast.NewGroupingExpression(ast.NewBinaryExpression(
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 4}),
-			*lexer.NewToken(lexer.DASH, "-", nil, 1),
-			ast.NewLiteralExpression(&lexer.NumberLiteral{Value: 3}))))
-
-	rpnPrinter := &visitor.RPNPrinter{}
-	fmt.Println(rpnPrinter.String(expr2))
-
 	nbArgs := len(os.Args)
 	if nbArgs > 2 {
 		fmt.Println("Usage: glox [script]")

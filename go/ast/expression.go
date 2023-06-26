@@ -39,13 +39,18 @@ func (expr *GroupingExpression) Accept(visitor Visitor) {
 }
 
 type LiteralExpression struct {
-	Value lexer.Literal
+	// TODO this should be a LoxValue of something like that
+	value LoxValue
 }
 
-func NewLiteralExpression(literal lexer.Literal) *LiteralExpression {
+func NewLiteralExpression(value LoxValue) *LiteralExpression {
 	return &LiteralExpression{
-		Value: literal,
+		value: value,
 	}
+}
+
+func (literalExpression *LiteralExpression) LoxValue() LoxValue {
+	return literalExpression.value
 }
 
 func (expr *LiteralExpression) Accept(visitor Visitor) {
