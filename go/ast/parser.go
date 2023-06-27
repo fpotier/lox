@@ -17,7 +17,7 @@ func (parser *Parser) Parse() ([]Statement, error) {
 	statements := make([]Statement, 0)
 	for !parser.isAtEnd() {
 		// TODO: handle error
-		s, err := parser.statement()
+		s, err := parser.declaration()
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -28,7 +28,49 @@ func (parser *Parser) Parse() ([]Statement, error) {
 	return statements, nil
 }
 
-// statement -> expressionStatement | printStatement
+// declaration -> varDeclaration
+//                | statement
+func (parser *Parser) declaration() (Statement, error) {
+	var statement Statement
+	var err error
+	if parser.match(lexer.VAR) {
+		statement, err = parser.varDeclaration()
+	} else {
+		statement, err = parser.statement()
+	}
+	if err != nil {
+		parser.synchronize()
+		return nil, err
+	}
+
+	return statement, nil
+}
+
+func (parser *Parser) varDeclaration() (Statement, error) {
+	// TODO: better error message
+	name, err := parser.consume(lexer.IDENTIFIER, "Expect a variable name")
+	if err != nil {
+		return nil, err
+	}
+	var initializer Expression
+	if parser.match(lexer.EQUAL) {
+		initializer, err = parser.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO: better error message
+	_, err = parser.consume(lexer.SEMICOLON, "Expect ';' after variable declaration")
+	if err != nil {
+		return nil, err
+	}
+
+	return NewVariableStatement(name, initializer), nil
+}
+
+// statement -> expressionStatement
+// 				| printStatement
 func (parser *Parser) statement() (Statement, error) {
 	if parser.match(lexer.PRINT) {
 		return parser.printStatement()
@@ -145,7 +187,8 @@ func (parser *Parser) factor() (Expression, error) {
 	return expr, nil
 }
 
-// unary -> ( "!" | "-" ) unary | primary
+// unary -> ( "!" | "-" ) unary
+//          | primary
 func (parser *Parser) unary() (Expression, error) {
 	if parser.match(lexer.BANG, lexer.DASH) {
 		operator := parser.previous()
@@ -159,7 +202,13 @@ func (parser *Parser) unary() (Expression, error) {
 	return parser.primary()
 }
 
-// primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")"
+// primary -> NUMBER
+//            | STRING
+//            | "true"
+//            | "false"
+//            | "nil"
+//            | "(" expression ")"
+//            | IDENTIFIER
 func (parser *Parser) primary() (Expression, error) {
 	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
 	if parser.match(lexer.FALSE) {
@@ -175,6 +224,10 @@ func (parser *Parser) primary() (Expression, error) {
 		return NewLiteralExpression(&NumberValue{Value: parser.previous().Literal.(*lexer.NumberLiteral).Value}), nil
 	} else if parser.match(lexer.STRING) {
 		return NewLiteralExpression(&StringValue{Value: parser.previous().Literal.(*lexer.StringLiteral).Value}), nil
+	}
+
+	if parser.match(lexer.IDENTIFIER) {
+		return NewVariableExpression(parser.previous()), nil
 	}
 
 	if parser.match(lexer.LEFT_PARANTHESIS) {

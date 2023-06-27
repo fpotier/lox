@@ -12,7 +12,16 @@ import (
 type Interpreter struct {
 	// Value can be virtually anything (string, number, boolean, object, nil, etc.)
 	Value           ast.LoxValue
+	environment     *ast.Environment
 	HadRuntimeError bool
+}
+
+func NewInterpreter() *Interpreter {
+	return &Interpreter{
+		Value:           nil,
+		environment:     ast.NewEnvironment(),
+		HadRuntimeError: false,
+	}
 }
 
 func (visitor *Interpreter) Eval(statements []ast.Statement) {
@@ -40,7 +49,20 @@ func (visitor *Interpreter) VisitExpressionStatement(expressionStatement *ast.Ex
 
 func (visitor *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
 	value := visitor.evaluate(printStatement.Expression)
-	fmt.Println(value.String())
+	if value == nil {
+		fmt.Println("<nil>")
+	} else {
+		fmt.Println(value.String())
+	}
+}
+
+func (visitor *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStatement) {
+	var value ast.LoxValue
+	if variableStatement.Initializer != nil {
+		value = visitor.evaluate(variableStatement.Initializer)
+	}
+
+	visitor.environment.Define(variableStatement.Name.Lexeme, value)
 }
 
 func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpression) {
@@ -109,6 +131,10 @@ func (visitor *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpre
 	}
 }
 
+func (visitor *Interpreter) VisitVariableExpression(variableExpression *ast.VariableExpression) {
+	visitor.Value = visitor.environment.Get(variableExpression.Name)
+}
+
 func (visitor *Interpreter) execute(statement ast.Statement) {
 	statement.Accept(visitor)
 }
@@ -116,6 +142,7 @@ func (visitor *Interpreter) execute(statement ast.Statement) {
 func (visitor *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
 	// TODO: handle error -> causes nil pointer dereference
 	newVisitor := &Interpreter{}
+	newVisitor.environment = visitor.environment
 	expression.Accept(newVisitor)
 
 	return newVisitor.Value

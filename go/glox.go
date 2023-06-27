@@ -13,6 +13,8 @@ import (
 	"github.com/sean-/sysexits"
 )
 
+var interpreter = visitor.NewInterpreter()
+
 func RunPrompt() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -50,7 +52,6 @@ func run(source_code string) {
 		fmt.Println(err)
 	}
 
-	interpreter := visitor.Interpreter{}
 	interpreter.Eval(statements)
 }
 

@@ -35,6 +35,17 @@ func (ps *PrintStatement) Accept(visitor Visitor) {
 }
 
 type VariableStatement struct {
-	name        lexer.Token
-	initializer Expression
+	Name        lexer.Token
+	Initializer Expression
+}
+
+func NewVariableStatement(name lexer.Token, initializer Expression) *VariableStatement {
+	return &VariableStatement{
+		Name:        name,
+		Initializer: initializer,
+	}
+}
+
+func (vs *VariableStatement) Accept(visitor Visitor) {
+	visitor.VisitVariableStatement(vs)
 }

@@ -72,3 +72,15 @@ func NewUnaryExpression(operator lexer.Token, rhs Expression) *UnaryExpression {
 func (expr *UnaryExpression) Accept(visitor Visitor) {
 	visitor.VisitUnaryExpression(expr)
 }
+
+type VariableExpression struct {
+	Name lexer.Token
+}
+
+func NewVariableExpression(name lexer.Token) *VariableExpression {
+	return &VariableExpression{Name: name}
+}
+
+func (expr *VariableExpression) Accept(visitor Visitor) {
+	visitor.VisitVariableExpression(expr)
+}

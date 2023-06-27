@@ -1,11 +1,13 @@
 package ast
 
 type Visitor interface {
-	VisitBinaryExpression(binaryExpression *BinaryExpression)
-	VisitGroupingExpression(groupingExpression *GroupingExpression)
-	VisitLiteralExpression(literalExpression *LiteralExpression)
-	VisitUnaryExpression(unaryExpression *UnaryExpression)
+	VisitBinaryExpression(*BinaryExpression)
+	VisitGroupingExpression(*GroupingExpression)
+	VisitLiteralExpression(*LiteralExpression)
+	VisitUnaryExpression(*UnaryExpression)
+	VisitVariableExpression(*VariableExpression)
 
-	VisitExpressionStatement(expressionStatement *ExpressionStatement)
-	VisitPrintStatement(printStatement *PrintStatement)
+	VisitExpressionStatement(*ExpressionStatement)
+	VisitPrintStatement(*PrintStatement)
+	VisitVariableStatement(*VariableStatement)
 }
