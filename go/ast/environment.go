@@ -24,5 +24,15 @@ func (env *Environment) Get(name lexer.Token) LoxValue {
 	if val, ok := env.values[name.Lexeme]; ok {
 		return val
 	}
+
+	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
+}
+
+func (env *Environment) Assign(name lexer.Token, value LoxValue) {
+	if _, ok := env.values[name.Lexeme]; ok {
+		env.values[name.Lexeme] = value
+		return
+	}
+
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
 }

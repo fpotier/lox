@@ -135,6 +135,12 @@ func (visitor *Interpreter) VisitVariableExpression(variableExpression *ast.Vari
 	visitor.Value = visitor.environment.Get(variableExpression.Name)
 }
 
+func (visitor *Interpreter) VisitAssignmentExpression(assignmentExpression *ast.AssignmentExpression) {
+	value := visitor.evaluate(assignmentExpression.Value)
+	visitor.environment.Assign(assignmentExpression.Name, value)
+	visitor.Value = value
+}
+
 func (visitor *Interpreter) execute(statement ast.Statement) {
 	statement.Accept(visitor)
 }

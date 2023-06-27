@@ -84,3 +84,19 @@ func NewVariableExpression(name lexer.Token) *VariableExpression {
 func (expr *VariableExpression) Accept(visitor Visitor) {
 	visitor.VisitVariableExpression(expr)
 }
+
+type AssignmentExpression struct {
+	Name  lexer.Token
+	Value Expression
+}
+
+func NewAssignmentExpression(name lexer.Token, value Expression) *AssignmentExpression {
+	return &AssignmentExpression{
+		Name:  name,
+		Value: value,
+	}
+}
+
+func (expr *AssignmentExpression) Accept(visitor Visitor) {
+	visitor.VisitAssignmentExpression(expr)
+}

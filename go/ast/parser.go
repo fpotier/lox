@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/fpotier/crafting-interpreters/go/lexer"
+	"github.com/fpotier/crafting-interpreters/go/loxerror"
 )
 
 type Parser struct {
@@ -105,9 +106,38 @@ func (parser *Parser) expressionStatement() (Statement, error) {
 	return NewExpressionStatement(expression), nil
 }
 
-// expression -> equality
+// expression -> assignment
 func (parser *Parser) expression() (Expression, error) {
-	return parser.equality()
+	return parser.assignment()
+}
+
+// assignment -> IDENTIFIER "=" assignment
+//               | equality
+func (parser *Parser) assignment() (Expression, error) {
+	expression, err := parser.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	if parser.match(lexer.EQUAL) {
+		equalsToken := parser.previous()
+		value, err := parser.assignment()
+		if err != nil {
+			return nil, err
+		}
+
+		if expression, ok := expression.(*VariableExpression); ok {
+			return NewAssignmentExpression(expression.Name, value), nil
+		}
+
+		// No need to go to put the parser in recovery mode
+		// TODO: better error message
+		loxerror.Error(equalsToken.Line, "Invalid assignment target")
+
+		return nil, errors.New("invalid assignment target")
+	}
+
+	return expression, nil
 }
 
 // equality -> comparison ( ( "!=" | "==" ) comparison ) *
