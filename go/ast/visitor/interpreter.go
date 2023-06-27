@@ -65,6 +65,10 @@ func (visitor *Interpreter) VisitVariableStatement(variableStatement *ast.Variab
 	visitor.environment.Define(variableStatement.Name.Lexeme, value)
 }
 
+func (visitor *Interpreter) VisitBlockStatement(blockStatement *ast.BlockStatement) {
+	visitor.executeBlock(blockStatement.Statements, ast.NewSubEnvironment(visitor.environment))
+}
+
 func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpression) {
 	lhs := visitor.evaluate(binaryExpression.Lhs)
 	rhs := visitor.evaluate(binaryExpression.Rhs)
@@ -139,6 +143,17 @@ func (visitor *Interpreter) VisitAssignmentExpression(assignmentExpression *ast.
 	value := visitor.evaluate(assignmentExpression.Value)
 	visitor.environment.Assign(assignmentExpression.Name, value)
 	visitor.Value = value
+}
+
+func (visitor *Interpreter) executeBlock(statements []ast.Statement, subEnvironment *ast.Environment) {
+	previousEnv := visitor.environment
+	visitor.environment = subEnvironment
+	// TODO error handling
+	for _, statement := range statements {
+		visitor.execute(statement)
+	}
+
+	visitor.environment = previousEnv
 }
 
 func (visitor *Interpreter) execute(statement ast.Statement) {

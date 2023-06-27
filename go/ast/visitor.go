@@ -11,4 +11,5 @@ type Visitor interface {
 	VisitExpressionStatement(*ExpressionStatement)
 	VisitPrintStatement(*PrintStatement)
 	VisitVariableStatement(*VariableStatement)
+	VisitBlockStatement(*BlockStatement)
 }

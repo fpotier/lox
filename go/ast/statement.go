@@ -1,13 +1,11 @@
 package ast
 
-import "github.com/fpotier/crafting-interpreters/go/lexer"
+import (
+	"github.com/fpotier/crafting-interpreters/go/lexer"
+)
 
 type Statement interface {
 	Accept(visitor Visitor)
-}
-
-type BlockStatement struct {
-	statements []Statement
 }
 
 type ExpressionStatement struct {
@@ -48,4 +46,18 @@ func NewVariableStatement(name lexer.Token, initializer Expression) *VariableSta
 
 func (vs *VariableStatement) Accept(visitor Visitor) {
 	visitor.VisitVariableStatement(vs)
+}
+
+type BlockStatement struct {
+	Statements []Statement
+}
+
+func NewBlockStatement(statements []Statement) *BlockStatement {
+	return &BlockStatement{
+		Statements: statements,
+	}
+}
+
+func (bs *BlockStatement) Accept(visitor Visitor) {
+	visitor.VisitBlockStatement(bs)
 }

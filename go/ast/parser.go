@@ -30,12 +30,20 @@ func (parser *Parser) Parse() ([]Statement, error) {
 }
 
 // declaration -> varDeclaration
-//                | statement
+//
+//	| statement
+//	| block
 func (parser *Parser) declaration() (Statement, error) {
 	var statement Statement
 	var err error
 	if parser.match(lexer.VAR) {
 		statement, err = parser.varDeclaration()
+	} else if parser.match(lexer.LEFT_BRACE) {
+		statements, innerErr := parser.block()
+		if innerErr == nil {
+			statement = NewBlockStatement(statements)
+		}
+		err = innerErr
 	} else {
 		statement, err = parser.statement()
 	}
@@ -47,6 +55,7 @@ func (parser *Parser) declaration() (Statement, error) {
 	return statement, nil
 }
 
+// varDeclaration -> IDENTIFIER ( "=" expression )? ";"
 func (parser *Parser) varDeclaration() (Statement, error) {
 	// TODO: better error message
 	name, err := parser.consume(lexer.IDENTIFIER, "Expect a variable name")
@@ -70,8 +79,27 @@ func (parser *Parser) varDeclaration() (Statement, error) {
 	return NewVariableStatement(name, initializer), nil
 }
 
+// block -> "{" declaration* "}"
+func (parser *Parser) block() ([]Statement, error) {
+	statements := make([]Statement, 0)
+	for !parser.check(lexer.RIGHT_BRACE) && !parser.isAtEnd() {
+		s, err := parser.declaration()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, s)
+	}
+	_, err := parser.consume(lexer.RIGHT_BRACE, "Expect '}' after block")
+	if err != nil {
+		return nil, err
+	}
+
+	return statements, nil
+}
+
 // statement -> expressionStatement
-// 				| printStatement
+//
+//	| printStatement
 func (parser *Parser) statement() (Statement, error) {
 	if parser.match(lexer.PRINT) {
 		return parser.printStatement()
@@ -112,7 +140,8 @@ func (parser *Parser) expression() (Expression, error) {
 }
 
 // assignment -> IDENTIFIER "=" assignment
-//               | equality
+//
+//	| equality
 func (parser *Parser) assignment() (Expression, error) {
 	expression, err := parser.equality()
 	if err != nil {
@@ -218,7 +247,7 @@ func (parser *Parser) factor() (Expression, error) {
 }
 
 // unary -> ( "!" | "-" ) unary
-//          | primary
+// | primary
 func (parser *Parser) unary() (Expression, error) {
 	if parser.match(lexer.BANG, lexer.DASH) {
 		operator := parser.previous()
@@ -233,12 +262,12 @@ func (parser *Parser) unary() (Expression, error) {
 }
 
 // primary -> NUMBER
-//            | STRING
-//            | "true"
-//            | "false"
-//            | "nil"
-//            | "(" expression ")"
-//            | IDENTIFIER
+// | STRING
+// | "true"
+// | "false"
+// | "nil"
+// | "(" expression ")"
+// | IDENTIFIER
 func (parser *Parser) primary() (Expression, error) {
 	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
 	if parser.match(lexer.FALSE) {

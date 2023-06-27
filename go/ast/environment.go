@@ -8,11 +8,22 @@ import (
 )
 
 type Environment struct {
-	values map[string]LoxValue
+	enclosing *Environment
+	values    map[string]LoxValue
 }
 
 func NewEnvironment() *Environment {
-	return &Environment{values: make(map[string]LoxValue)}
+	return &Environment{
+		enclosing: nil,
+		values:    make(map[string]LoxValue),
+	}
+}
+
+func NewSubEnvironment(enclosing *Environment) *Environment {
+	return &Environment{
+		enclosing: enclosing,
+		values:    make(map[string]LoxValue),
+	}
 }
 
 func (env *Environment) Define(name string, value LoxValue) {
@@ -25,12 +36,21 @@ func (env *Environment) Get(name lexer.Token) LoxValue {
 		return val
 	}
 
+	if env.enclosing != nil {
+		return env.enclosing.Get(name)
+	}
+
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
 }
 
 func (env *Environment) Assign(name lexer.Token, value LoxValue) {
 	if _, ok := env.values[name.Lexeme]; ok {
 		env.values[name.Lexeme] = value
+		return
+	}
+
+	if env.enclosing != nil {
+		env.enclosing.Assign(name, value)
 		return
 	}
 
