@@ -1,0 +1,8 @@
+run:
+  timeout: 30m
+  tests: true
+output:
+  format: colored-line-number,github-actions
+  print-issued-lines: true
+linters:
+  enable-all: true
