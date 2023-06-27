@@ -60,6 +60,8 @@ func (lexer *Lexer) scanToken() {
 		lexer.addToken(LEFT_BRACE)
 	case '}':
 		lexer.addToken(LEFT_BRACE)
+	case ';':
+		lexer.addToken(SEMICOLON)
 	case ',':
 		lexer.addToken(COMMA)
 	case '.':

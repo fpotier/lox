@@ -44,19 +44,14 @@ func run(source_code string) {
 	lexer := lexer.NewLexer(source_code)
 	tokens := lexer.Tokens()
 	parser := ast.NewParser(tokens)
-	expr, err := parser.Parse()
+	statements, err := parser.Parse()
 
 	if loxerror.HadError || err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println((&visitor.LispPrinter{}).String(expr))
-	fmt.Println((&visitor.RPNPrinter{}).String(expr))
 	interpreter := visitor.Interpreter{}
-	interpreter.Eval(expr)
-	if !interpreter.HadRuntimeError {
-		fmt.Println(interpreter.Value)
-	}
+	interpreter.Eval(statements)
 }
 
 func main() {

@@ -2,14 +2,13 @@ package visitor
 
 import (
 	"strings"
-
-	"github.com/fpotier/crafting-interpreters/go/ast"
 )
 
 type LispPrinter struct {
 	builder strings.Builder
 }
 
+/*
 func (visitor *LispPrinter) String(expr ast.Expression) string {
 	expr.Accept(visitor)
 	return visitor.builder.String()
@@ -40,3 +39,4 @@ func (visitor *LispPrinter) parenthesize(name string, expressions ...ast.Express
 	}
 	visitor.builder.WriteString(")")
 }
+*/

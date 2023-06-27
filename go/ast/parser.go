@@ -2,6 +2,7 @@ package ast
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 )
@@ -11,8 +12,55 @@ type Parser struct {
 	current int
 }
 
-func (parser *Parser) Parse() (Expression, error) {
-	return parser.expression()
+// program -> statement* EOF
+func (parser *Parser) Parse() ([]Statement, error) {
+	statements := make([]Statement, 0)
+	for !parser.isAtEnd() {
+		// TODO: handle error
+		s, err := parser.statement()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			statements = append(statements, s)
+		}
+	}
+
+	return statements, nil
+}
+
+// statement -> expressionStatement | printStatement
+func (parser *Parser) statement() (Statement, error) {
+	if parser.match(lexer.PRINT) {
+		return parser.printStatement()
+	} else {
+		return parser.expressionStatement()
+	}
+}
+
+// printStatement -> "print" expression ";"
+func (parser *Parser) printStatement() (Statement, error) {
+	value, err := parser.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = parser.consume(lexer.SEMICOLON, "Expect ';' after value")
+	if err != nil {
+		return nil, err
+	}
+	return NewPrintStatement(value), nil
+}
+
+// expressionStatement -> expression ";"
+func (parser *Parser) expressionStatement() (Statement, error) {
+	expression, err := parser.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = parser.consume(lexer.SEMICOLON, "Expect ';' after value")
+	if err != nil {
+		return nil, err
+	}
+	return NewExpressionStatement(expression), nil
 }
 
 // expression -> equality
@@ -189,6 +237,7 @@ func (parser *Parser) previous() lexer.Token {
 	return parser.tokens[parser.current-1]
 }
 
+// TODO: all call site should have better error messages
 func (parser *Parser) consume(tokenType lexer.TokenType, message string) (lexer.Token, error) {
 	if parser.check(tokenType) {
 		return parser.advance(), nil

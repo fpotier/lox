@@ -2,14 +2,13 @@ package visitor
 
 import (
 	"strings"
-
-	"github.com/fpotier/crafting-interpreters/go/ast"
 )
 
 type RPNPrinter struct {
 	builder strings.Builder
 }
 
+/*
 func (visitor *RPNPrinter) String(expr ast.Expression) string {
 	expr.Accept(visitor)
 	return visitor.builder.String()
@@ -35,3 +34,4 @@ func (visitor *RPNPrinter) VisitUnaryExpression(unaryExpression *ast.UnaryExpres
 	visitor.builder.WriteString(unaryExpression.Operator.Lexeme)
 	unaryExpression.Rhs.Accept(visitor)
 }
+*/

@@ -1,0 +1,40 @@
+package ast
+
+import "github.com/fpotier/crafting-interpreters/go/lexer"
+
+type Statement interface {
+	Accept(visitor Visitor)
+}
+
+type BlockStatement struct {
+	statements []Statement
+}
+
+type ExpressionStatement struct {
+	Expression Expression
+}
+
+func NewExpressionStatement(expression Expression) *ExpressionStatement {
+	return &ExpressionStatement{Expression: expression}
+}
+
+func (es *ExpressionStatement) Accept(visitor Visitor) {
+	visitor.VisitExpressionStatement(es)
+}
+
+type PrintStatement struct {
+	Expression Expression
+}
+
+func NewPrintStatement(expression Expression) *PrintStatement {
+	return &PrintStatement{Expression: expression}
+}
+
+func (ps *PrintStatement) Accept(visitor Visitor) {
+	visitor.VisitPrintStatement(ps)
+}
+
+type VariableStatement struct {
+	name        lexer.Token
+	initializer Expression
+}

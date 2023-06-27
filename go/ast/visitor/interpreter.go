@@ -15,7 +15,7 @@ type Interpreter struct {
 	HadRuntimeError bool
 }
 
-func (visitor *Interpreter) Eval(expression ast.Expression) interface{} {
+func (visitor *Interpreter) Eval(statements []ast.Statement) {
 	// This allows us to emulate a try/catch mechanism to exit the visitor as soon as possible
 	// without changing the Visit...() methods to return an error and propagate manually these errors
 	defer func() {
@@ -28,8 +28,19 @@ func (visitor *Interpreter) Eval(expression ast.Expression) interface{} {
 			panic(r)
 		}
 	}()
-	expression.Accept(visitor)
-	return visitor.Value
+
+	for _, statement := range statements {
+		visitor.execute(statement)
+	}
+}
+
+func (visitor *Interpreter) VisitExpressionStatement(expressionStatement *ast.ExpressionStatement) {
+	visitor.evaluate(expressionStatement.Expression)
+}
+
+func (visitor *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
+	value := visitor.evaluate(printStatement.Expression)
+	fmt.Println(value.String())
 }
 
 func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpression) {
@@ -98,7 +109,12 @@ func (visitor *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpre
 	}
 }
 
+func (visitor *Interpreter) execute(statement ast.Statement) {
+	statement.Accept(visitor)
+}
+
 func (visitor *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
+	// TODO: handle error -> causes nil pointer dereference
 	newVisitor := &Interpreter{}
 	expression.Accept(newVisitor)
 

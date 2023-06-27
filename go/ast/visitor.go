@@ -5,4 +5,7 @@ type Visitor interface {
 	VisitGroupingExpression(groupingExpression *GroupingExpression)
 	VisitLiteralExpression(literalExpression *LiteralExpression)
 	VisitUnaryExpression(unaryExpression *UnaryExpression)
+
+	VisitExpressionStatement(expressionStatement *ExpressionStatement)
+	VisitPrintStatement(printStatement *PrintStatement)
 }
