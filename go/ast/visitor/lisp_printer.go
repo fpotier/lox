@@ -1,11 +1,7 @@
 package visitor
 
-import (
-	"strings"
-)
-
 type LispPrinter struct {
-	builder strings.Builder
+	// builder strings.Builder
 }
 
 /*

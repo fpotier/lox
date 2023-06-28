@@ -42,8 +42,8 @@ func RunFile(filepath string) {
 	}
 }
 
-func run(source_code string) {
-	lexer := lexer.NewLexer(source_code)
+func run(sourceCode string) {
+	lexer := lexer.NewLexer(sourceCode)
 	tokens := lexer.Tokens()
 	parser := ast.NewParser(tokens)
 	statements, err := parser.Parse()
@@ -56,11 +56,11 @@ func run(source_code string) {
 }
 
 func main() {
-	nbArgs := len(os.Args)
-	if nbArgs > 2 {
+	const maxArgs = 2
+	if nbArgs := len(os.Args); nbArgs > maxArgs {
 		fmt.Println("Usage: glox [script]")
 		os.Exit(sysexits.Usage)
-	} else if nbArgs == 2 {
+	} else if nbArgs == maxArgs {
 		fmt.Printf("Run file %v\n", os.Args[1])
 		RunFile(os.Args[1])
 	} else {

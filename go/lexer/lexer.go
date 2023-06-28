@@ -53,48 +53,48 @@ func (lexer *Lexer) scanToken() {
 	case '\n':
 		lexer.line++
 	case '(':
-		lexer.addToken(LEFT_PARANTHESIS)
+		lexer.addToken(LeftParenthesis)
 	case ')':
-		lexer.addToken(RIGHT_PARANTHESIS)
+		lexer.addToken(RightParenthesis)
 	case '{':
-		lexer.addToken(LEFT_BRACE)
+		lexer.addToken(LeftBrace)
 	case '}':
-		lexer.addToken(RIGHT_BRACE)
+		lexer.addToken(RightBrace)
 	case ';':
-		lexer.addToken(SEMICOLON)
+		lexer.addToken(Semicolon)
 	case ',':
-		lexer.addToken(COMMA)
+		lexer.addToken(Comma)
 	case '.':
-		lexer.addToken(DOT)
+		lexer.addToken(Dot)
 	case '-':
-		lexer.addToken(DASH)
+		lexer.addToken(Dash)
 	case '+':
-		lexer.addToken(PLUS)
+		lexer.addToken(Plus)
 	case '*':
-		lexer.addToken(STAR)
+		lexer.addToken(Star)
 	case '!':
 		if lexer.match('=') {
-			lexer.addToken(BANG_EQUAL)
+			lexer.addToken(BangEqual)
 		} else {
-			lexer.addToken(BANG)
+			lexer.addToken(Bang)
 		}
 	case '=':
 		if lexer.match('=') {
-			lexer.addToken(EQUAL_EQUAL)
+			lexer.addToken(EqualEqual)
 		} else {
-			lexer.addToken(EQUAL)
+			lexer.addToken(Equal)
 		}
 	case '<':
 		if lexer.match('=') {
-			lexer.addToken(LESS_EQUAL)
+			lexer.addToken(LessEqual)
 		} else {
-			lexer.addToken(LESS)
+			lexer.addToken(Less)
 		}
 	case '>':
 		if lexer.match('=') {
-			lexer.addToken(GREATER_EQUAL)
+			lexer.addToken(GreaterEqual)
 		} else {
-			lexer.addToken(GREATER)
+			lexer.addToken(Greater)
 		}
 	case '/':
 		if lexer.match('/') {
@@ -102,16 +102,17 @@ func (lexer *Lexer) scanToken() {
 				lexer.advance()
 			}
 		} else {
-			lexer.addToken(SLASH)
+			lexer.addToken(Slash)
 		}
 	case '"':
 		lexer.string()
 	default:
-		if isDigit(c) {
+		switch {
+		case isDigit(c):
 			lexer.number()
-		} else if isAlpha(c) {
+		case isAlpha(c):
 			lexer.identifier()
-		} else {
+		default:
 			loxerror.Error(lexer.line, fmt.Sprintf("Unexpected character '%c'", c))
 		}
 	}
@@ -154,17 +155,17 @@ func (lexer *Lexer) match(expected byte) bool {
 func (lexer *Lexer) peek() byte {
 	if lexer.isAtEnd() {
 		return 0
-	} else {
-		return lexer.sourceCode[lexer.current]
 	}
+
+	return lexer.sourceCode[lexer.current]
 }
 
 func (lexer *Lexer) peekNext() byte {
 	if lexer.current+1 >= len(lexer.sourceCode) {
 		return 0
-	} else {
-		return lexer.sourceCode[lexer.current+1]
 	}
+
+	return lexer.sourceCode[lexer.current+1]
 }
 
 func (lexer *Lexer) string() {
@@ -172,8 +173,10 @@ func (lexer *Lexer) string() {
 		if lexer.peek() == '\n' {
 			lexer.line++
 		}
+
 		lexer.advance()
 	}
+
 	if lexer.isAtEnd() {
 		loxerror.Error(lexer.line, "Unterminated string")
 		return
@@ -181,7 +184,7 @@ func (lexer *Lexer) string() {
 
 	lexer.advance() // the closing "
 	stringValue := lexer.sourceCode[lexer.start+1 : lexer.current-1]
-	lexer.addTokenWithLiteral(STRING, &StringLiteral{Value: stringValue})
+	lexer.addTokenWithLiteral(String, &StringLiteral{Value: stringValue})
 }
 
 // Lox number should only be of this form: (\d*)(\.?)(\d*)
@@ -201,10 +204,11 @@ func (lexer *Lexer) number() {
 
 	floatValue, err := strconv.ParseFloat(lexer.sourceCode[lexer.start:lexer.current], 64)
 	if err != nil {
-		loxerror.Error(lexer.line, fmt.Sprintf("Error converting %v to float: %v", lexer.sourceCode[lexer.start:lexer.current], err))
+		loxerror.Error(lexer.line,
+			fmt.Sprintf("Error converting %v to float: %v", lexer.sourceCode[lexer.start:lexer.current], err))
 		return
 	}
-	lexer.addTokenWithLiteral(NUMBER, &NumberLiteral{Value: floatValue})
+	lexer.addTokenWithLiteral(Number, &NumberLiteral{Value: floatValue})
 }
 
 func (lexer *Lexer) identifier() {
@@ -216,6 +220,6 @@ func (lexer *Lexer) identifier() {
 	if tokenType, ok := keywords[text]; ok {
 		lexer.addToken(tokenType)
 	} else {
-		lexer.addToken(IDENTIFIER)
+		lexer.addToken(Identifier)
 	}
 }

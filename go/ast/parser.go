@@ -36,15 +36,16 @@ func (parser *Parser) Parse() ([]Statement, error) {
 func (parser *Parser) declaration() (Statement, error) {
 	var statement Statement
 	var err error
-	if parser.match(lexer.VAR) {
+	switch {
+	case parser.match(lexer.Var):
 		statement, err = parser.varDeclaration()
-	} else if parser.match(lexer.LEFT_BRACE) {
+	case parser.match(lexer.LeftBrace):
 		statements, innerErr := parser.block()
 		if innerErr == nil {
 			statement = NewBlockStatement(statements)
 		}
 		err = innerErr
-	} else {
+	default:
 		statement, err = parser.statement()
 	}
 	if err != nil {
@@ -58,12 +59,12 @@ func (parser *Parser) declaration() (Statement, error) {
 // varDeclaration -> IDENTIFIER ( "=" expression )? ";"
 func (parser *Parser) varDeclaration() (Statement, error) {
 	// TODO: better error message
-	name, err := parser.consume(lexer.IDENTIFIER, "Expect a variable name")
+	name, err := parser.consume(lexer.Identifier, "Expect a variable name")
 	if err != nil {
 		return nil, err
 	}
 	var initializer Expression
-	if parser.match(lexer.EQUAL) {
+	if parser.match(lexer.Equal) {
 		initializer, err = parser.expression()
 		if err != nil {
 			return nil, err
@@ -71,7 +72,7 @@ func (parser *Parser) varDeclaration() (Statement, error) {
 	}
 
 	// TODO: better error message
-	_, err = parser.consume(lexer.SEMICOLON, "Expect ';' after variable declaration")
+	_, err = parser.consume(lexer.Semicolon, "Expect ';' after variable declaration")
 	if err != nil {
 		return nil, err
 	}
@@ -82,14 +83,14 @@ func (parser *Parser) varDeclaration() (Statement, error) {
 // block -> "{" declaration* "}"
 func (parser *Parser) block() ([]Statement, error) {
 	statements := make([]Statement, 0)
-	for !parser.check(lexer.RIGHT_BRACE) && !parser.isAtEnd() {
+	for !parser.check(lexer.RightBrace) && !parser.isAtEnd() {
 		s, err := parser.declaration()
 		if err != nil {
 			return nil, err
 		}
 		statements = append(statements, s)
 	}
-	_, err := parser.consume(lexer.RIGHT_BRACE, "Expect '}' after block")
+	_, err := parser.consume(lexer.RightBrace, "Expect '}' after block")
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +102,11 @@ func (parser *Parser) block() ([]Statement, error) {
 //
 //	| printStatement
 func (parser *Parser) statement() (Statement, error) {
-	if parser.match(lexer.PRINT) {
+	if parser.match(lexer.Print) {
 		return parser.printStatement()
-	} else {
-		return parser.expressionStatement()
 	}
+
+	return parser.expressionStatement()
 }
 
 // printStatement -> "print" expression ";"
@@ -114,7 +115,7 @@ func (parser *Parser) printStatement() (Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = parser.consume(lexer.SEMICOLON, "Expect ';' after value")
+	_, err = parser.consume(lexer.Semicolon, "Expect ';' after value")
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,7 @@ func (parser *Parser) expressionStatement() (Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = parser.consume(lexer.SEMICOLON, "Expect ';' after value")
+	_, err = parser.consume(lexer.Semicolon, "Expect ';' after value")
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +149,7 @@ func (parser *Parser) assignment() (Expression, error) {
 		return nil, err
 	}
 
-	if parser.match(lexer.EQUAL) {
+	if parser.match(lexer.Equal) {
 		equalsToken := parser.previous()
 		value, err := parser.assignment()
 		if err != nil {
@@ -176,7 +177,7 @@ func (parser *Parser) equality() (Expression, error) {
 		return nil, err
 	}
 
-	for parser.match(lexer.BANG_EQUAL, lexer.EQUAL_EQUAL) {
+	for parser.match(lexer.BangEqual, lexer.EqualEqual) {
 		operator := parser.previous()
 		rhs, err := parser.comparison()
 		if err != nil {
@@ -195,7 +196,7 @@ func (parser *Parser) comparison() (Expression, error) {
 		return nil, err
 	}
 
-	for parser.match(lexer.GREATER, lexer.GREATER_EQUAL, lexer.LESS, lexer.LESS_EQUAL) {
+	for parser.match(lexer.Greater, lexer.GreaterEqual, lexer.Less, lexer.LessEqual) {
 		operator := parser.previous()
 		rhs, err := parser.term()
 		if err != nil {
@@ -214,7 +215,7 @@ func (parser *Parser) term() (Expression, error) {
 		return nil, err
 	}
 
-	for parser.match(lexer.PLUS, lexer.DASH) {
+	for parser.match(lexer.Plus, lexer.Dash) {
 		operator := parser.previous()
 		rhs, err := parser.factor()
 		if err != nil {
@@ -234,7 +235,7 @@ func (parser *Parser) factor() (Expression, error) {
 		return nil, err
 	}
 
-	for parser.match(lexer.STAR, lexer.SLASH) {
+	for parser.match(lexer.Star, lexer.Slash) {
 		operator := parser.previous()
 		rhs, err := parser.unary()
 		if err != nil {
@@ -249,7 +250,7 @@ func (parser *Parser) factor() (Expression, error) {
 // unary -> ( "!" | "-" ) unary
 // | primary
 func (parser *Parser) unary() (Expression, error) {
-	if parser.match(lexer.BANG, lexer.DASH) {
+	if parser.match(lexer.Bang, lexer.Dash) {
 		operator := parser.previous()
 		rhs, err := parser.unary()
 		if err != nil {
@@ -270,31 +271,32 @@ func (parser *Parser) unary() (Expression, error) {
 // | IDENTIFIER
 func (parser *Parser) primary() (Expression, error) {
 	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
-	if parser.match(lexer.FALSE) {
+	switch {
+	case parser.match(lexer.False):
 		return NewLiteralExpression(NewBooleanValue(false)), nil
-	} else if parser.match(lexer.TRUE) {
+	case parser.match(lexer.True):
 		return NewLiteralExpression(NewBooleanValue(true)), nil
-	} else if parser.match(lexer.NIL) {
+	case parser.match(lexer.Nil):
 		return NewLiteralExpression(&ObjectValue{Value: nil}), nil
 	}
 
 	// TODO: is there a better solution?
-	if parser.match(lexer.NUMBER) {
+	if parser.match(lexer.Number) {
 		return NewLiteralExpression(&NumberValue{Value: parser.previous().Literal.(*lexer.NumberLiteral).Value}), nil
-	} else if parser.match(lexer.STRING) {
+	} else if parser.match(lexer.String) {
 		return NewLiteralExpression(&StringValue{Value: parser.previous().Literal.(*lexer.StringLiteral).Value}), nil
 	}
 
-	if parser.match(lexer.IDENTIFIER) {
+	if parser.match(lexer.Identifier) {
 		return NewVariableExpression(parser.previous()), nil
 	}
 
-	if parser.match(lexer.LEFT_PARANTHESIS) {
+	if parser.match(lexer.LeftParenthesis) {
 		expr, err := parser.expression()
 		if err != nil {
 			return nil, err
 		}
-		_, err = parser.consume(lexer.RIGHT_PARANTHESIS, "Expect ')' after expression")
+		_, err = parser.consume(lexer.RightParenthesis, "Expect ')' after expression")
 		if err != nil {
 			return nil, err
 		}
@@ -353,9 +355,9 @@ func (parser *Parser) previous() lexer.Token {
 func (parser *Parser) consume(tokenType lexer.TokenType, message string) (lexer.Token, error) {
 	if parser.check(tokenType) {
 		return parser.advance(), nil
-	} else {
-		return parser.peek(), errors.New(message)
 	}
+
+	return parser.peek(), errors.New(message)
 }
 
 func (parser *Parser) synchronize() {
@@ -363,17 +365,24 @@ func (parser *Parser) synchronize() {
 
 	for !parser.isAtEnd() {
 		switch parser.previous().Type {
-		case lexer.SEMICOLON:
-		case lexer.CLASS:
-		case lexer.VAR:
-		case lexer.FOR:
-		case lexer.IF:
-		case lexer.WHILE:
-		case lexer.PRINT:
-		case lexer.RETURN:
+		case lexer.Semicolon:
+			fallthrough
+		case lexer.Class:
+			fallthrough
+		case lexer.Var:
+			fallthrough
+		case lexer.For:
+			fallthrough
+		case lexer.If:
+			fallthrough
+		case lexer.While:
+			fallthrough
+		case lexer.Print:
+			fallthrough
+		case lexer.Return:
 			return
+		default:
+			parser.advance()
 		}
-
-		parser.advance()
 	}
 }

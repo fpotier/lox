@@ -23,80 +23,80 @@ func NewToken(kind TokenType, lexeme string, literal Literal, line int) *Token {
 func (token *Token) String() string {
 	if token.Literal != nil {
 		return fmt.Sprintf("%v (value:%v)", tokenRepresentation[token.Type], token.Literal.String())
-	} else {
-		return fmt.Sprintf("%v", tokenRepresentation[token.Type])
 	}
+
+	return fmt.Sprintf("%v", tokenRepresentation[token.Type])
 }
 
 const (
-	LEFT_PARANTHESIS TokenType = iota
-	RIGHT_PARANTHESIS
-	LEFT_BRACE
-	RIGHT_BRACE
-	COMMA
-	DOT
-	DASH
-	PLUS
-	SEMICOLON
-	SLASH
-	STAR
-	BANG
-	BANG_EQUAL
-	EQUAL
-	EQUAL_EQUAL
-	GREATER
-	GREATER_EQUAL
-	LESS
-	LESS_EQUAL
+	LeftParenthesis TokenType = iota
+	RightParenthesis
+	LeftBrace
+	RightBrace
+	Comma
+	Dot
+	Dash
+	Plus
+	Semicolon
+	Slash
+	Star
+	Bang
+	BangEqual
+	Equal
+	EqualEqual
+	Greater
+	GreaterEqual
+	Less
+	LessEqual
 
 	// Literals
-	IDENTIFIER
-	STRING
-	NUMBER
+	Identifier
+	String
+	Number
 
 	// Keywords
-	AND
-	CLASS
-	ELSE
-	FALSE
-	FUN
-	FOR
-	IF
-	NIL
-	OR
-	PRINT
-	RETURN
-	SUPER
-	THIS
-	TRUE
-	VAR
-	WHILE
+	And
+	Class
+	Else
+	False
+	Fun
+	For
+	If
+	Nil
+	Or
+	Print
+	Return
+	Super
+	This
+	True
+	Var
+	While
 
 	EOF
 )
 
 var keywords = map[string]TokenType{
-	"and":    AND,
-	"class":  CLASS,
-	"else":   ELSE,
-	"false":  FALSE,
-	"fun":    FUN,
-	"for":    FOR,
-	"if":     IF,
-	"nil":    NIL,
-	"or":     OR,
-	"print":  PRINT,
-	"return": RETURN,
-	"super":  SUPER,
-	"this":   THIS,
-	"true":   TRUE,
-	"var":    VAR,
-	"while":  WHILE,
+	"and":    And,
+	"class":  Class,
+	"else":   Else,
+	"false":  False,
+	"fun":    Fun,
+	"for":    For,
+	"if":     If,
+	"nil":    Nil,
+	"or":     Or,
+	"print":  Print,
+	"return": Return,
+	"super":  Super,
+	"this":   This,
+	"true":   True,
+	"var":    Var,
+	"while":  While,
 }
 
 var tokenRepresentation = []string{
-	"LEFT_PARANTHESIS",
-	"RIGHT_PARANTHESIS",
+	"LEFT_PARENTHESIS",
+	"RIGHT_PARENTHESIS",
 	"LEFT_BRACE",
 	"RIGHT_BRACE",
 	"COMMA",

@@ -7,16 +7,16 @@ type Expression interface {
 }
 
 type BinaryExpression struct {
-	Lhs      Expression
+	LHS      Expression
 	Operator lexer.Token
-	Rhs      Expression
+	RHS      Expression
 }
 
 func NewBinaryExpression(lhs Expression, operator lexer.Token, rhs Expression) *BinaryExpression {
 	return &BinaryExpression{
-		Lhs:      lhs,
+		LHS:      lhs,
 		Operator: operator,
-		Rhs:      rhs,
+		RHS:      rhs,
 	}
 }
 
@@ -53,19 +53,19 @@ func (literalExpression *LiteralExpression) LoxValue() LoxValue {
 	return literalExpression.value
 }
 
-func (expr *LiteralExpression) Accept(visitor Visitor) {
-	visitor.VisitLiteralExpression(expr)
+func (literalExpression *LiteralExpression) Accept(visitor Visitor) {
+	visitor.VisitLiteralExpression(literalExpression)
 }
 
 type UnaryExpression struct {
 	Operator lexer.Token
-	Rhs      Expression
+	RHS      Expression
 }
 
 func NewUnaryExpression(operator lexer.Token, rhs Expression) *UnaryExpression {
 	return &UnaryExpression{
 		Operator: operator,
-		Rhs:      rhs,
+		RHS:      rhs,
 	}
 }
 

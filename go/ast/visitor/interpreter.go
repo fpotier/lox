@@ -70,47 +70,51 @@ func (visitor *Interpreter) VisitBlockStatement(blockStatement *ast.BlockStateme
 }
 
 func (visitor *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpression) {
-	lhs := visitor.evaluate(binaryExpression.Lhs)
-	rhs := visitor.evaluate(binaryExpression.Rhs)
+	lhs := visitor.evaluate(binaryExpression.LHS)
+	rhs := visitor.evaluate(binaryExpression.RHS)
 
 	switch binaryExpression.Operator.Type {
-	case lexer.PLUS:
-		if lhs.IsNumber() && rhs.IsNumber() {
+	case lexer.Plus:
+		switch {
+		case lhs.IsNumber() && rhs.IsNumber():
 			visitor.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value + rhs.(*ast.NumberValue).Value)
-		} else if lhs.IsString() && rhs.IsString() {
+		case lhs.IsString() && rhs.IsString():
 			visitor.Value = ast.NewStringValue(lhs.(*ast.StringValue).Value + rhs.(*ast.StringValue).Value)
-		} else {
+		default:
 			// TODO: print lox types instead of go types
 			panic(loxerror.RuntimeError{
-				Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v", binaryExpression.Operator.Lexeme, reflect.TypeOf(lhs), reflect.TypeOf(rhs)),
+				Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v",
+					binaryExpression.Operator.Lexeme,
+					reflect.TypeOf(lhs),
+					reflect.TypeOf(rhs)),
 			})
 		}
-	case lexer.DASH:
+	case lexer.Dash:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value - rhs.(*ast.NumberValue).Value)
-	case lexer.STAR:
+	case lexer.Star:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value * rhs.(*ast.NumberValue).Value)
-	case lexer.SLASH:
+	case lexer.Slash:
 		// TODO check if rhs is 0 ?
 		// go seems kinda broken: float64 / 0 = +Inf
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value / rhs.(*ast.NumberValue).Value)
-	case lexer.GREATER:
+	case lexer.Greater:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value > rhs.(*ast.NumberValue).Value)
-	case lexer.GREATER_EQUAL:
+	case lexer.GreaterEqual:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value >= rhs.(*ast.NumberValue).Value)
-	case lexer.LESS:
+	case lexer.Less:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value < rhs.(*ast.NumberValue).Value)
-	case lexer.LESS_EQUAL:
+	case lexer.LessEqual:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
 		visitor.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value <= rhs.(*ast.NumberValue).Value)
-	case lexer.EQUAL_EQUAL:
+	case lexer.EqualEqual:
 		visitor.Value = ast.NewBooleanValue(lhs.Equals(rhs))
-	case lexer.BANG_EQUAL:
+	case lexer.BangEqual:
 		visitor.Value = ast.NewBooleanValue(!lhs.Equals(rhs))
 	}
 }
@@ -124,12 +128,12 @@ func (visitor *Interpreter) VisitLiteralExpression(literalExpression *ast.Litera
 }
 
 func (visitor *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpression) {
-	rhs := visitor.evaluate(unaryExpression.Rhs)
+	rhs := visitor.evaluate(unaryExpression.RHS)
 
 	switch unaryExpression.Operator.Type {
-	case lexer.BANG:
+	case lexer.Bang:
 		visitor.Value = ast.NewBooleanValue(!rhs.IsTruthy())
-	case lexer.DASH:
+	case lexer.Dash:
 		assertNumberOperand(unaryExpression.Operator, rhs)
 		visitor.Value = ast.NewNumberValue(-rhs.(*ast.NumberValue).Value)
 	}
@@ -162,8 +166,11 @@ func (visitor *Interpreter) execute(statement ast.Statement) {
 
 func (visitor *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
 	// TODO: handle error -> causes nil pointer dereference
-	newVisitor := &Interpreter{}
-	newVisitor.environment = visitor.environment
+	newVisitor := &Interpreter{
+		Value:           nil,
+		environment:     visitor.environment,
+		HadRuntimeError: false,
+	}
 	expression.Accept(newVisitor)
 
 	return newVisitor.Value
@@ -173,7 +180,10 @@ func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxVal
 	if !lhs.IsNumber() || !rhs.IsNumber() {
 		panic(loxerror.RuntimeError{
 			// TODO: print lox types instead of go types
-			Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v", operator.Lexeme, reflect.TypeOf(lhs), reflect.TypeOf(rhs)),
+			Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v",
+				operator.Lexeme,
+				reflect.TypeOf(lhs),
+				reflect.TypeOf(rhs)),
 		})
 	}
 }

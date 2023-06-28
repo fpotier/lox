@@ -2,7 +2,48 @@ run:
   timeout: 30m
   tests: true
 output:
-  format: colored-line-number,github-actions
+  format: colored-line-number
   print-issued-lines: true
 linters:
   enable-all: true
+  disable:
+    # Deprecated
+    - varcheck
+    - deadcode
+    - maligned
+    - nosnakecase
+    - exhaustivestruct
+    - golint
+    - interfacer
+    - scopelint
+    - structcheck
+    # Comments
+    - godot
+    - godox
+    # Style
+    - wsl
+    - gofumpt
+    - gofmt
+    # Other
+    - gci
+    - nlreturn
+    - depguard
+    - goimports
+    - funlen
+    - forcetypeassert
+    - ireturn
+    - gochecknoglobals
+    - cyclop
+    - varnamelen
+    - forbidigo
+    # Might enable later
+    - goerr113
+    - exhaustive
+linter-settings:
+  nlreturn:
+    blocksize: 2
+  revive:
+    - name: var-naming
+      arguments:
+        - ["Lhs", "Rhs", "Eof"]
+        - []
