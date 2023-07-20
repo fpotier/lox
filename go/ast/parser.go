@@ -13,16 +13,19 @@ import (
 // program -> statement* EOF
 //
 // declaration -> varDeclaration
-//				  | statement
-//				  | block
+//                | statement
+//                | block
 //
 // varDeclaration -> IDENTIFIER ( "=" expression )? ";"
 //
 // block -> "{" declaration* "}"
 //
 // statement -> expressionStatement
-//	            | printStatement
-//				| block
+//              | ifStatement
+//              | printStatement
+//              | block
+//
+// ifStatement -> "if" "(" expression ")" ( "else" statement )?
 //
 // printStatement -> "print" expression ";"
 //
@@ -31,7 +34,7 @@ import (
 // expression -> assignment
 //
 // assignment -> IDENTIFIER "=" assignment
-//	             | equality
+//               | equality
 //
 // equality -> comparison ( ( "!=" | "==" ) comparison ) *
 //
@@ -136,11 +139,14 @@ func (p *Parser) block() ([]Statement, error) {
 }
 
 func (p *Parser) statement() (Statement, error) {
-	if p.match(lexer.Print) {
+	switch {
+	case p.match(lexer.Print):
 		return p.printStatement()
+	case p.match(lexer.If):
+		return p.ifStatement()
+	default:
+		return p.expressionStatement()
 	}
-
-	return p.expressionStatement()
 }
 
 func (p *Parser) printStatement() (Statement, error) {
@@ -153,6 +159,28 @@ func (p *Parser) printStatement() (Statement, error) {
 		return nil, err
 	}
 	return NewPrintStatement(value), nil
+}
+
+func (p *Parser) ifStatement() (Statement, error) {
+	p.consume(lexer.LeftParenthesis, "Expect '(' after 'if' statement")
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	p.consume(lexer.RightParenthesis, "Expect ')' after 'if' condition")
+	thenCode, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	var elseCode Statement
+	if p.match(lexer.Else) {
+		elseCode, err = p.statement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return NewIfStatment(expr, thenCode, elseCode), nil
 }
 
 func (p *Parser) expressionStatement() (Statement, error) {

@@ -61,3 +61,21 @@ func NewBlockStatement(statements []Statement) *BlockStatement {
 func (s *BlockStatement) Accept(visitor Visitor) {
 	visitor.VisitBlockStatement(s)
 }
+
+type IfStatement struct {
+	Condition Expression
+	ThenCode  Statement
+	ElseCode  Statement
+}
+
+func NewIfStatment(condition Expression, thenCode Statement, elseCode Statement) *IfStatement {
+	return &IfStatement{
+		Condition: condition,
+		ThenCode:  thenCode,
+		ElseCode:  elseCode,
+	}
+}
+
+func (s *IfStatement) Accept(visitor Visitor) {
+	visitor.VisitIfStatement(s)
+}

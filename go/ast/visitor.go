@@ -12,4 +12,5 @@ type Visitor interface {
 	VisitPrintStatement(*PrintStatement)
 	VisitVariableStatement(*VariableStatement)
 	VisitBlockStatement(*BlockStatement)
+	VisitIfStatement(*IfStatement)
 }

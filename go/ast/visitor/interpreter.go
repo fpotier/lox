@@ -47,6 +47,14 @@ func (i *Interpreter) Eval(statements []ast.Statement) {
 	}
 }
 
+func (i *Interpreter) VisitIfStatement(ifStatment *ast.IfStatement) {
+	if i.evaluate(ifStatment.Condition).IsTruthy() {
+		i.execute(ifStatment.ThenCode)
+	} else if ifStatment.ElseCode != nil {
+		i.execute(ifStatment.ElseCode)
+	}
+}
+
 func (i *Interpreter) VisitExpressionStatement(expressionStatement *ast.ExpressionStatement) {
 	i.evaluate(expressionStatement.Expression)
 }
