@@ -20,8 +20,8 @@ func NewBinaryExpression(lhs Expression, operator lexer.Token, rhs Expression) *
 	}
 }
 
-func (expr *BinaryExpression) Accept(visitor Visitor) {
-	visitor.VisitBinaryExpression(expr)
+func (e *BinaryExpression) Accept(visitor Visitor) {
+	visitor.VisitBinaryExpression(e)
 }
 
 type GroupingExpression struct {
@@ -34,8 +34,8 @@ func NewGroupingExpression(expr Expression) *GroupingExpression {
 	}
 }
 
-func (expr *GroupingExpression) Accept(visitor Visitor) {
-	visitor.VisitGroupingExpression(expr)
+func (e *GroupingExpression) Accept(visitor Visitor) {
+	visitor.VisitGroupingExpression(e)
 }
 
 type LiteralExpression struct {
@@ -49,12 +49,12 @@ func NewLiteralExpression(value LoxValue) *LiteralExpression {
 	}
 }
 
-func (literalExpression *LiteralExpression) LoxValue() LoxValue {
-	return literalExpression.value
+func (e *LiteralExpression) LoxValue() LoxValue {
+	return e.value
 }
 
-func (literalExpression *LiteralExpression) Accept(visitor Visitor) {
-	visitor.VisitLiteralExpression(literalExpression)
+func (e *LiteralExpression) Accept(visitor Visitor) {
+	visitor.VisitLiteralExpression(e)
 }
 
 type UnaryExpression struct {
@@ -69,8 +69,8 @@ func NewUnaryExpression(operator lexer.Token, rhs Expression) *UnaryExpression {
 	}
 }
 
-func (expr *UnaryExpression) Accept(visitor Visitor) {
-	visitor.VisitUnaryExpression(expr)
+func (e *UnaryExpression) Accept(visitor Visitor) {
+	visitor.VisitUnaryExpression(e)
 }
 
 type VariableExpression struct {
@@ -81,8 +81,8 @@ func NewVariableExpression(name lexer.Token) *VariableExpression {
 	return &VariableExpression{Name: name}
 }
 
-func (expr *VariableExpression) Accept(visitor Visitor) {
-	visitor.VisitVariableExpression(expr)
+func (e *VariableExpression) Accept(visitor Visitor) {
+	visitor.VisitVariableExpression(e)
 }
 
 type AssignmentExpression struct {
@@ -97,6 +97,6 @@ func NewAssignmentExpression(name lexer.Token, value Expression) *AssignmentExpr
 	}
 }
 
-func (expr *AssignmentExpression) Accept(visitor Visitor) {
-	visitor.VisitAssignmentExpression(expr)
+func (e *AssignmentExpression) Accept(visitor Visitor) {
+	visitor.VisitAssignmentExpression(e)
 }

@@ -10,14 +10,14 @@ type StringLiteral struct {
 	Value string
 }
 
-func (literal *StringLiteral) String() string {
-	return literal.Value
+func (l *StringLiteral) String() string {
+	return l.Value
 }
 
 type NumberLiteral struct {
 	Value float64
 }
 
-func (literal *NumberLiteral) String() string {
-	return fmt.Sprintf("%v", literal.Value)
+func (l *NumberLiteral) String() string {
+	return fmt.Sprintf("%v", l.Value)
 }

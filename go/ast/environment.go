@@ -26,31 +26,31 @@ func NewSubEnvironment(enclosing *Environment) *Environment {
 	}
 }
 
-func (env *Environment) Define(name string, value LoxValue) {
+func (e *Environment) Define(name string, value LoxValue) {
 	// Note: redeclaring a top-level (global) variable is allowed
-	env.values[name] = value
+	e.values[name] = value
 }
 
-func (env *Environment) Get(name lexer.Token) LoxValue {
-	if val, ok := env.values[name.Lexeme]; ok {
+func (e *Environment) Get(name lexer.Token) LoxValue {
+	if val, ok := e.values[name.Lexeme]; ok {
 		return val
 	}
 
-	if env.enclosing != nil {
-		return env.enclosing.Get(name)
+	if e.enclosing != nil {
+		return e.enclosing.Get(name)
 	}
 
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
 }
 
-func (env *Environment) Assign(name lexer.Token, value LoxValue) {
-	if _, ok := env.values[name.Lexeme]; ok {
-		env.values[name.Lexeme] = value
+func (e *Environment) Assign(name lexer.Token, value LoxValue) {
+	if _, ok := e.values[name.Lexeme]; ok {
+		e.values[name.Lexeme] = value
 		return
 	}
 
-	if env.enclosing != nil {
-		env.enclosing.Assign(name, value)
+	if e.enclosing != nil {
+		e.enclosing.Assign(name, value)
 		return
 	}
 

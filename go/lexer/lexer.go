@@ -25,95 +25,95 @@ func NewLexer(sourceCode string) *Lexer {
 	}
 }
 
-func (lexer *Lexer) Tokens() []Token {
-	for !lexer.isAtEnd() {
-		lexer.start = lexer.current
-		lexer.scanToken()
+func (l *Lexer) Tokens() []Token {
+	for !l.isAtEnd() {
+		l.start = l.current
+		l.scanToken()
 	}
-	lexer.tokens = append(lexer.tokens, *NewToken(EOF, "", nil, lexer.line))
+	l.tokens = append(l.tokens, *NewToken(EOF, "", nil, l.line))
 
-	return lexer.tokens
+	return l.tokens
 }
 
-func (lexer *Lexer) addToken(kind TokenType) {
-	lexer.addTokenWithLiteral(kind, nil)
+func (l *Lexer) addToken(kind TokenType) {
+	l.addTokenWithLiteral(kind, nil)
 }
 
-func (lexer *Lexer) addTokenWithLiteral(kind TokenType, literal Literal) {
-	text := lexer.sourceCode[lexer.start:lexer.current]
-	lexer.tokens = append(lexer.tokens, *NewToken(kind, text, literal, lexer.line))
+func (l *Lexer) addTokenWithLiteral(kind TokenType, literal Literal) {
+	text := l.sourceCode[l.start:l.current]
+	l.tokens = append(l.tokens, *NewToken(kind, text, literal, l.line))
 }
 
-func (lexer *Lexer) scanToken() {
-	c := lexer.advance()
+func (l *Lexer) scanToken() {
+	c := l.advance()
 	switch c {
 	case ' ':
 	case '\r':
 	case '\t':
 	case '\n':
-		lexer.line++
+		l.line++
 	case '(':
-		lexer.addToken(LeftParenthesis)
+		l.addToken(LeftParenthesis)
 	case ')':
-		lexer.addToken(RightParenthesis)
+		l.addToken(RightParenthesis)
 	case '{':
-		lexer.addToken(LeftBrace)
+		l.addToken(LeftBrace)
 	case '}':
-		lexer.addToken(RightBrace)
+		l.addToken(RightBrace)
 	case ';':
-		lexer.addToken(Semicolon)
+		l.addToken(Semicolon)
 	case ',':
-		lexer.addToken(Comma)
+		l.addToken(Comma)
 	case '.':
-		lexer.addToken(Dot)
+		l.addToken(Dot)
 	case '-':
-		lexer.addToken(Dash)
+		l.addToken(Dash)
 	case '+':
-		lexer.addToken(Plus)
+		l.addToken(Plus)
 	case '*':
-		lexer.addToken(Star)
+		l.addToken(Star)
 	case '!':
-		if lexer.match('=') {
-			lexer.addToken(BangEqual)
+		if l.match('=') {
+			l.addToken(BangEqual)
 		} else {
-			lexer.addToken(Bang)
+			l.addToken(Bang)
 		}
 	case '=':
-		if lexer.match('=') {
-			lexer.addToken(EqualEqual)
+		if l.match('=') {
+			l.addToken(EqualEqual)
 		} else {
-			lexer.addToken(Equal)
+			l.addToken(Equal)
 		}
 	case '<':
-		if lexer.match('=') {
-			lexer.addToken(LessEqual)
+		if l.match('=') {
+			l.addToken(LessEqual)
 		} else {
-			lexer.addToken(Less)
+			l.addToken(Less)
 		}
 	case '>':
-		if lexer.match('=') {
-			lexer.addToken(GreaterEqual)
+		if l.match('=') {
+			l.addToken(GreaterEqual)
 		} else {
-			lexer.addToken(Greater)
+			l.addToken(Greater)
 		}
 	case '/':
-		if lexer.match('/') {
-			for lexer.peek() != '\n' && !lexer.isAtEnd() {
-				lexer.advance()
+		if l.match('/') {
+			for l.peek() != '\n' && !l.isAtEnd() {
+				l.advance()
 			}
 		} else {
-			lexer.addToken(Slash)
+			l.addToken(Slash)
 		}
 	case '"':
-		lexer.string()
+		l.string()
 	default:
 		switch {
 		case isDigit(c):
-			lexer.number()
+			l.number()
 		case isAlpha(c):
-			lexer.identifier()
+			l.identifier()
 		default:
-			loxerror.Error(lexer.line, fmt.Sprintf("Unexpected character '%c'", c))
+			loxerror.Error(l.line, fmt.Sprintf("Unexpected character '%c'", c))
 		}
 	}
 }
@@ -132,94 +132,94 @@ func isAlphaNumeric(character byte) bool {
 	return isAlpha(character) || isDigit(character)
 }
 
-func (lexer *Lexer) isAtEnd() bool {
-	return lexer.current >= len(lexer.sourceCode)
+func (l *Lexer) isAtEnd() bool {
+	return l.current >= len(l.sourceCode)
 }
 
-func (lexer *Lexer) advance() byte {
-	char := lexer.sourceCode[lexer.current]
-	lexer.current++
+func (l *Lexer) advance() byte {
+	char := l.sourceCode[l.current]
+	l.current++
 
 	return char
 }
 
-func (lexer *Lexer) match(expected byte) bool {
-	doesMatch := !lexer.isAtEnd() && lexer.sourceCode[lexer.current] == expected
+func (l *Lexer) match(expected byte) bool {
+	doesMatch := !l.isAtEnd() && l.sourceCode[l.current] == expected
 	if doesMatch {
-		lexer.current++
+		l.current++
 	}
 
 	return doesMatch
 }
 
-func (lexer *Lexer) peek() byte {
-	if lexer.isAtEnd() {
+func (l *Lexer) peek() byte {
+	if l.isAtEnd() {
 		return 0
 	}
 
-	return lexer.sourceCode[lexer.current]
+	return l.sourceCode[l.current]
 }
 
-func (lexer *Lexer) peekNext() byte {
-	if lexer.current+1 >= len(lexer.sourceCode) {
+func (l *Lexer) peekNext() byte {
+	if l.current+1 >= len(l.sourceCode) {
 		return 0
 	}
 
-	return lexer.sourceCode[lexer.current+1]
+	return l.sourceCode[l.current+1]
 }
 
-func (lexer *Lexer) string() {
-	for lexer.peek() != '"' && !lexer.isAtEnd() {
-		if lexer.peek() == '\n' {
-			lexer.line++
+func (l *Lexer) string() {
+	for l.peek() != '"' && !l.isAtEnd() {
+		if l.peek() == '\n' {
+			l.line++
 		}
 
-		lexer.advance()
+		l.advance()
 	}
 
-	if lexer.isAtEnd() {
-		loxerror.Error(lexer.line, "Unterminated string")
+	if l.isAtEnd() {
+		loxerror.Error(l.line, "Unterminated string")
 		return
 	}
 
-	lexer.advance() // the closing "
-	stringValue := lexer.sourceCode[lexer.start+1 : lexer.current-1]
-	lexer.addTokenWithLiteral(String, &StringLiteral{Value: stringValue})
+	l.advance() // the closing "
+	stringValue := l.sourceCode[l.start+1 : l.current-1]
+	l.addTokenWithLiteral(String, &StringLiteral{Value: stringValue})
 }
 
 // Lox number should only be of this form: (\d*)(\.?)(\d*)
-func (lexer *Lexer) number() {
-	for isDigit(lexer.peek()) {
-		lexer.advance()
+func (l *Lexer) number() {
+	for isDigit(l.peek()) {
+		l.advance()
 	}
 
-	if lexer.peek() == '.' && isDigit(lexer.peekNext()) {
+	if l.peek() == '.' && isDigit(l.peekNext()) {
 		// Consume the '.'
-		lexer.advance()
+		l.advance()
 
-		for isDigit(lexer.peek()) {
-			lexer.advance()
+		for isDigit(l.peek()) {
+			l.advance()
 		}
 	}
 
-	floatValue, err := strconv.ParseFloat(lexer.sourceCode[lexer.start:lexer.current], 64)
+	floatValue, err := strconv.ParseFloat(l.sourceCode[l.start:l.current], 64)
 	if err != nil {
-		loxerror.Error(lexer.line,
-			fmt.Sprintf("Error converting %v to float: %v", lexer.sourceCode[lexer.start:lexer.current], err))
+		loxerror.Error(l.line,
+			fmt.Sprintf("Error converting %v to float: %v", l.sourceCode[l.start:l.current], err))
 		return
 	}
-	lexer.addTokenWithLiteral(Number, &NumberLiteral{Value: floatValue})
+	l.addTokenWithLiteral(Number, &NumberLiteral{Value: floatValue})
 }
 
-func (lexer *Lexer) identifier() {
-	for isAlphaNumeric(lexer.peek()) {
-		lexer.advance()
+func (l *Lexer) identifier() {
+	for isAlphaNumeric(l.peek()) {
+		l.advance()
 	}
 
-	text := lexer.sourceCode[lexer.start:lexer.current]
+	text := l.sourceCode[l.start:l.current]
 	if tokenType, ok := keywords[text]; ok {
-		lexer.addToken(tokenType)
+		l.addToken(tokenType)
 	} else {
-		lexer.addToken(Identifier)
+		l.addToken(Identifier)
 	}
 }

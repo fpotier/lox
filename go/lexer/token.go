@@ -20,12 +20,12 @@ func NewToken(kind TokenType, lexeme string, literal Literal, line int) *Token {
 	}
 }
 
-func (token *Token) String() string {
-	if token.Literal != nil {
-		return fmt.Sprintf("%v (value:%v)", tokenRepresentation[token.Type], token.Literal.String())
+func (t *Token) String() string {
+	if t.Literal != nil {
+		return fmt.Sprintf("%v (value:%v)", tokenRepresentation[t.Type], t.Literal.String())
 	}
 
-	return fmt.Sprintf("%v", tokenRepresentation[token.Type])
+	return fmt.Sprintf("%v", tokenRepresentation[t.Type])
 }
 
 const (

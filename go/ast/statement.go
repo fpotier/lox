@@ -16,8 +16,8 @@ func NewExpressionStatement(expression Expression) *ExpressionStatement {
 	return &ExpressionStatement{Expression: expression}
 }
 
-func (es *ExpressionStatement) Accept(visitor Visitor) {
-	visitor.VisitExpressionStatement(es)
+func (s *ExpressionStatement) Accept(visitor Visitor) {
+	visitor.VisitExpressionStatement(s)
 }
 
 type PrintStatement struct {
@@ -28,8 +28,8 @@ func NewPrintStatement(expression Expression) *PrintStatement {
 	return &PrintStatement{Expression: expression}
 }
 
-func (ps *PrintStatement) Accept(visitor Visitor) {
-	visitor.VisitPrintStatement(ps)
+func (s *PrintStatement) Accept(visitor Visitor) {
+	visitor.VisitPrintStatement(s)
 }
 
 type VariableStatement struct {
@@ -44,8 +44,8 @@ func NewVariableStatement(name lexer.Token, initializer Expression) *VariableSta
 	}
 }
 
-func (vs *VariableStatement) Accept(visitor Visitor) {
-	visitor.VisitVariableStatement(vs)
+func (s *VariableStatement) Accept(visitor Visitor) {
+	visitor.VisitVariableStatement(s)
 }
 
 type BlockStatement struct {
@@ -58,6 +58,6 @@ func NewBlockStatement(statements []Statement) *BlockStatement {
 	}
 }
 
-func (bs *BlockStatement) Accept(visitor Visitor) {
-	visitor.VisitBlockStatement(bs)
+func (s *BlockStatement) Accept(visitor Visitor) {
+	visitor.VisitBlockStatement(s)
 }

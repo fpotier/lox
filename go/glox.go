@@ -13,6 +13,7 @@ import (
 	"github.com/sean-/sysexits"
 )
 
+// Maybe get rid of this global variable
 var interpreter = visitor.NewInterpreter()
 
 func RunPrompt() {
