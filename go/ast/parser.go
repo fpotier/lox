@@ -23,11 +23,14 @@ import (
 // statement -> expressionStatement
 //              | ifStatement
 //              | printStatement
+//              | whileStatement
 //              | block
 //
 // ifStatement -> "if" "(" expression ")" ( "else" statement )?
 //
 // printStatement -> "print" expression ";"
+//
+// whileStatment -> "while" "(" expression ")" statement
 //
 // expressionStatement -> expression ";"
 //
@@ -148,6 +151,11 @@ func (p *Parser) statement() (Statement, error) {
 		return p.printStatement()
 	case p.match(lexer.If):
 		return p.ifStatement()
+	case p.match(lexer.While):
+		return p.whileStatment()
+	case p.match(lexer.LeftBrace):
+		statements, err := p.block()
+		return NewBlockStatement(statements), err
 	default:
 		return p.expressionStatement()
 	}
@@ -187,6 +195,21 @@ func (p *Parser) ifStatement() (Statement, error) {
 	}
 
 	return NewIfStatment(expr, thenCode, elseCode), nil
+}
+
+func (p *Parser) whileStatment() (Statement, error) {
+	p.consume(lexer.LeftParenthesis, "Expect '(' after 'while'")
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	p.consume(lexer.RightParenthesis, "Expect ')' after 'while' condition")
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewWhileStatement(condition, body), nil
 }
 
 func (p *Parser) expressionStatement() (Statement, error) {

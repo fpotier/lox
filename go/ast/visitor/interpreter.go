@@ -55,6 +55,12 @@ func (i *Interpreter) VisitIfStatement(ifStatment *ast.IfStatement) {
 	}
 }
 
+func (i *Interpreter) VisitWhileStatement(whileStatement *ast.WhileStatement) {
+	for i.evaluate(whileStatement.Condition).IsTruthy() {
+		i.execute(whileStatement.Body)
+	}
+}
+
 func (i *Interpreter) VisitExpressionStatement(expressionStatement *ast.ExpressionStatement) {
 	i.evaluate(expressionStatement.Expression)
 }

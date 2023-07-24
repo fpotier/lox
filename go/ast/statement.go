@@ -79,3 +79,19 @@ func NewIfStatment(condition Expression, thenCode Statement, elseCode Statement)
 func (s *IfStatement) Accept(visitor Visitor) {
 	visitor.VisitIfStatement(s)
 }
+
+type WhileStatement struct {
+	Condition Expression
+	Body      Statement
+}
+
+func NewWhileStatement(condition Expression, body Statement) *WhileStatement {
+	return &WhileStatement{
+		Condition: condition,
+		Body:      body,
+	}
+}
+
+func (s *WhileStatement) Accept(visitor Visitor) {
+	visitor.VisitWhileStatement(s)
+}
