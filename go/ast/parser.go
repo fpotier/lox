@@ -1,9 +1,6 @@
 package ast
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/fpotier/crafting-interpreters/go/loxerror"
 )
@@ -70,85 +67,64 @@ type Parser struct {
 	current int
 }
 
-func (p *Parser) Parse() ([]Statement, error) {
+func (p *Parser) Parse() []Statement {
 	statements := make([]Statement, 0)
 	for !p.isAtEnd() {
-		// TODO: handle error
-		s, err := p.declaration()
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			statements = append(statements, s)
-		}
-	}
-
-	return statements, nil
-}
-
-func (p *Parser) declaration() (Statement, error) {
-	var statement Statement
-	var err error
-	switch {
-	case p.match(lexer.Var):
-		statement, err = p.varDeclaration()
-	case p.match(lexer.LeftBrace):
-		statements, innerErr := p.block()
-		if innerErr == nil {
-			statement = NewBlockStatement(statements)
-		}
-		err = innerErr
-	default:
-		statement, err = p.statement()
-	}
-	if err != nil {
-		p.synchronize()
-		return nil, err
-	}
-
-	return statement, nil
-}
-
-func (p *Parser) varDeclaration() (Statement, error) {
-	// TODO: better error message
-	name, err := p.consume(lexer.Identifier, "Expect a variable name")
-	if err != nil {
-		return nil, err
-	}
-	var initializer Expression
-	if p.match(lexer.Equal) {
-		initializer, err = p.expression()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// TODO: better error message
-	_, err = p.consume(lexer.Semicolon, "Expect ';' after variable declaration")
-	if err != nil {
-		return nil, err
-	}
-
-	return NewVariableStatement(name, initializer), nil
-}
-
-func (p *Parser) block() ([]Statement, error) {
-	statements := make([]Statement, 0)
-	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
-		s, err := p.declaration()
-		if err != nil {
-			return nil, err
-		}
+		s := p.declaration()
 		statements = append(statements, s)
 	}
-	_, err := p.consume(lexer.RightBrace, "Expect '}' after block")
-	if err != nil {
-		return nil, err
-	}
 
-	return statements, nil
+	return statements
 }
 
-func (p *Parser) statement() (Statement, error) {
+func (p *Parser) declaration() Statement {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(loxerror.ParserError); ok {
+				p.synchronize()
+				return
+			}
+			panic(r)
+		}
+	}()
+
+	var statement Statement
+	switch {
+	case p.match(lexer.Var):
+		statement = p.varDeclaration()
+	case p.match(lexer.LeftBrace):
+		statement = NewBlockStatement(p.block())
+	default:
+		statement = p.statement()
+	}
+
+	return statement
+}
+
+func (p *Parser) varDeclaration() Statement {
+	name := p.consume(lexer.Identifier, "Expect a variable name")
+	var initializer Expression
+	if p.match(lexer.Equal) {
+		initializer = p.expression()
+	}
+
+	p.consume(lexer.Semicolon, "Expect ';' after variable declaration")
+
+	return NewVariableStatement(name, initializer)
+}
+
+func (p *Parser) block() []Statement {
+	statements := make([]Statement, 0)
+	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
+		s := p.declaration()
+		statements = append(statements, s)
+	}
+	p.consume(lexer.RightBrace, "Expect '}' after block")
+
+	return statements
+}
+
+func (p *Parser) statement() Statement {
 	switch {
 	case p.match(lexer.For):
 		return p.forStatement()
@@ -159,57 +135,38 @@ func (p *Parser) statement() (Statement, error) {
 	case p.match(lexer.While):
 		return p.whileStatment()
 	case p.match(lexer.LeftBrace):
-		statements, err := p.block()
-		return NewBlockStatement(statements), err
+		return NewBlockStatement(p.block())
 	default:
 		return p.expressionStatement()
 	}
 }
 
-func (p *Parser) forStatement() (Statement, error) {
-	// TODO error handling
-	_, _ = p.consume(lexer.LeftParenthesis, "Expect '(' after 'for'")
+func (p *Parser) forStatement() Statement {
+	p.consume(lexer.LeftParenthesis, "Expect '(' after 'for'")
 	var initializer Statement
-	var err error
 	switch {
 	case p.match(lexer.Semicolon):
 		// Do nothing
 		initializer = nil
 	case p.match(lexer.Var):
-		initializer, err = p.varDeclaration()
-		if err != nil {
-			return nil, err
-		}
+		initializer = p.varDeclaration()
 	default:
-		initializer, err = p.expressionStatement()
-		if err != nil {
-			return nil, err
-		}
+		initializer = p.expressionStatement()
 	}
 
 	var condition Expression
 	if !p.check(lexer.Semicolon) {
-		condition, err = p.expression()
-		if err != nil {
-			return nil, err
-		}
+		condition = p.expression()
 	}
-	// TODO error handling
-	_, _ = p.consume(lexer.Semicolon, "Expect ';' after loop condition")
+	p.consume(lexer.Semicolon, "Expect ';' after loop condition")
 
 	var increment Expression
 	if !p.check(lexer.RightParenthesis) {
-		increment, err = p.expression()
-		if err != nil {
-			return nil, err
-		}
+		increment = p.expression()
 	}
 	p.consume(lexer.RightParenthesis, "Expect ')' after for clauses")
 
-	body, err := p.statement()
-	if err != nil {
-		return nil, err
-	}
+	body := p.statement()
 
 	if increment != nil {
 		body = NewBlockStatement([]Statement{body, NewExpressionStatement(increment)})
@@ -225,262 +182,185 @@ func (p *Parser) forStatement() (Statement, error) {
 		forLoop = NewBlockStatement([]Statement{initializer, newBody})
 	}
 
-	return forLoop, nil
+	return forLoop
 }
 
-func (p *Parser) printStatement() (Statement, error) {
-	value, err := p.expression()
-	if err != nil {
-		return nil, err
-	}
-	_, err = p.consume(lexer.Semicolon, "Expect ';' after value")
-	if err != nil {
-		return nil, err
-	}
-	return NewPrintStatement(value), nil
+func (p *Parser) printStatement() Statement {
+	value := p.expression()
+	p.consume(lexer.Semicolon, "Expect ';' after value")
+
+	return NewPrintStatement(value)
 }
 
-func (p *Parser) ifStatement() (Statement, error) {
-	// TODO error handling
-	_, _ = p.consume(lexer.LeftParenthesis, "Expect '(' after 'if' statement")
-	expr, err := p.expression()
-	if err != nil {
-		return nil, err
-	}
-	// TODO error handling
-	_, _ = p.consume(lexer.RightParenthesis, "Expect ')' after 'if' condition")
-	thenCode, err := p.statement()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) ifStatement() Statement {
+	p.consume(lexer.LeftParenthesis, "Expect '(' after 'if' statement")
+	expr := p.expression()
+	p.consume(lexer.RightParenthesis, "Expect ')' after 'if' condition")
+	thenCode := p.statement()
 	var elseCode Statement
 	if p.match(lexer.Else) {
-		elseCode, err = p.statement()
-		if err != nil {
-			return nil, err
-		}
+		elseCode = p.statement()
 	}
 
-	return NewIfStatment(expr, thenCode, elseCode), nil
+	return NewIfStatment(expr, thenCode, elseCode)
 }
 
-func (p *Parser) whileStatment() (Statement, error) {
-	// TODO error handling
-	_, _ = p.consume(lexer.LeftParenthesis, "Expect '(' after 'while'")
-	condition, err := p.expression()
-	if err != nil {
-		return nil, err
-	}
-	// TODO error handling
-	_, _ = p.consume(lexer.RightParenthesis, "Expect ')' after 'while' condition")
-	body, err := p.statement()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) whileStatment() Statement {
+	p.consume(lexer.LeftParenthesis, "Expect '(' after 'while'")
+	condition := p.expression()
+	p.consume(lexer.RightParenthesis, "Expect ')' after 'while' condition")
+	body := p.statement()
 
-	return NewWhileStatement(condition, body), nil
+	return NewWhileStatement(condition, body)
 }
 
-func (p *Parser) expressionStatement() (Statement, error) {
-	expression, err := p.expression()
-	if err != nil {
-		return nil, err
-	}
-	_, err = p.consume(lexer.Semicolon, "Expect ';' after value")
-	if err != nil {
-		return nil, err
-	}
-	return NewExpressionStatement(expression), nil
+func (p *Parser) expressionStatement() Statement {
+	expression := p.expression()
+	p.consume(lexer.Semicolon, "Expect ';' after value")
+
+	return NewExpressionStatement(expression)
 }
 
-func (p *Parser) expression() (Expression, error) {
+func (p *Parser) expression() Expression {
 	return p.assignment()
 }
 
-func (p *Parser) assignment() (Expression, error) {
-	expression, err := p.or()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) assignment() Expression {
+	expression := p.or()
 
 	if p.match(lexer.Equal) {
 		equalsToken := p.previous()
-		value, err := p.assignment()
-		if err != nil {
-			return nil, err
-		}
+		value := p.assignment()
 
 		if expression, ok := expression.(*VariableExpression); ok {
-			return NewAssignmentExpression(expression.Name, value), nil
+			return NewAssignmentExpression(expression.Name, value)
 		}
 
 		// No need to go to put the parser in recovery mode
 		// TODO: better error message
 		loxerror.Error(equalsToken.Line, "Invalid assignment target")
 
-		return nil, errors.New("invalid assignment target")
+		return nil
 	}
 
-	return expression, nil
+	return expression
 }
 
-func (p *Parser) or() (Expression, error) {
-	expr, err := p.and()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) or() Expression {
+	expr := p.and()
 
 	for p.match(lexer.Or) {
 		operator := p.previous()
-		rhs, err := p.and()
-		if err != nil {
-			return nil, err
-		}
+		rhs := p.and()
 		expr = NewLogicalExpression(expr, operator, rhs)
 	}
 
-	return expr, nil
+	return expr
 }
 
-func (p *Parser) and() (Expression, error) {
-	expr, err := p.equality()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) and() Expression {
+	expr := p.equality()
 
 	for p.match(lexer.And) {
 		operator := p.previous()
-		rhs, err := p.equality()
-		if err != nil {
-			return nil, err
-		}
+		rhs := p.equality()
 		expr = NewLogicalExpression(expr, operator, rhs)
 	}
 
-	return expr, nil
+	return expr
 }
 
-func (p *Parser) equality() (Expression, error) {
-	expr, err := p.comparison()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) equality() Expression {
+	expr := p.comparison()
 
 	for p.match(lexer.BangEqual, lexer.EqualEqual) {
 		operator := p.previous()
-		rhs, err := p.comparison()
-		if err != nil {
-			return nil, err
-		}
+		rhs := p.comparison()
 		expr = NewBinaryExpression(expr, operator, rhs)
 	}
 
-	return expr, nil
+	return expr
 }
 
-func (p *Parser) comparison() (Expression, error) {
-	expr, err := p.term()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) comparison() Expression {
+	expr := p.term()
 
 	for p.match(lexer.Greater, lexer.GreaterEqual, lexer.Less, lexer.LessEqual) {
 		operator := p.previous()
-		rhs, err := p.term()
-		if err != nil {
-			return nil, err
-		}
+		rhs := p.term()
 		expr = NewBinaryExpression(expr, operator, rhs)
 	}
 
-	return expr, nil
+	return expr
 }
 
-func (p *Parser) term() (Expression, error) {
-	expr, err := p.factor()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) term() Expression {
+	expr := p.factor()
 
 	for p.match(lexer.Plus, lexer.Dash) {
 		operator := p.previous()
-		rhs, err := p.factor()
-		if err != nil {
-			return nil, err
-		}
+		rhs := p.factor()
 
 		expr = NewBinaryExpression(expr, operator, rhs)
 	}
 
-	return expr, nil
+	return expr
 }
 
-func (p *Parser) factor() (Expression, error) {
-	expr, err := p.unary()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) factor() Expression {
+	expr := p.unary()
 
 	for p.match(lexer.Star, lexer.Slash) {
 		operator := p.previous()
-		rhs, err := p.unary()
-		if err != nil {
-			return nil, err
-		}
+		rhs := p.unary()
 		expr = NewBinaryExpression(expr, operator, rhs)
 	}
 
-	return expr, nil
+	return expr
 }
 
-func (p *Parser) unary() (Expression, error) {
+func (p *Parser) unary() Expression {
 	if p.match(lexer.Bang, lexer.Dash) {
 		operator := p.previous()
-		rhs, err := p.unary()
-		if err != nil {
-			return nil, err
-		}
-		return NewUnaryExpression(operator, rhs), nil
+		rhs := p.unary()
+
+		return NewUnaryExpression(operator, rhs)
 	}
 
 	return p.primary()
 }
 
-func (p *Parser) primary() (Expression, error) {
+func (p *Parser) primary() Expression {
 	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
 	switch {
 	case p.match(lexer.False):
-		return NewLiteralExpression(NewBooleanValue(false)), nil
+		return NewLiteralExpression(NewBooleanValue(false))
 	case p.match(lexer.True):
-		return NewLiteralExpression(NewBooleanValue(true)), nil
+		return NewLiteralExpression(NewBooleanValue(true))
 	case p.match(lexer.Nil):
-		return NewLiteralExpression(&ObjectValue{Value: nil}), nil
+		return NewLiteralExpression(&ObjectValue{Value: nil})
 	}
 
 	// TODO: is there a better solution?
 	if p.match(lexer.Number) {
-		return NewLiteralExpression(&NumberValue{Value: p.previous().Literal.(*lexer.NumberLiteral).Value}), nil
+		return NewLiteralExpression(&NumberValue{Value: p.previous().Literal.(*lexer.NumberLiteral).Value})
 	} else if p.match(lexer.String) {
-		return NewLiteralExpression(&StringValue{Value: p.previous().Literal.(*lexer.StringLiteral).Value}), nil
+		return NewLiteralExpression(&StringValue{Value: p.previous().Literal.(*lexer.StringLiteral).Value})
 	}
 
 	if p.match(lexer.Identifier) {
-		return NewVariableExpression(p.previous()), nil
+		return NewVariableExpression(p.previous())
 	}
 
 	if p.match(lexer.LeftParenthesis) {
-		expr, err := p.expression()
-		if err != nil {
-			return nil, err
-		}
-		_, err = p.consume(lexer.RightParenthesis, "Expect ')' after expression")
-		if err != nil {
-			return nil, err
-		}
-		return NewGroupingExpression(expr), nil
+		expr := p.expression()
+		p.consume(lexer.RightParenthesis, "Expect ')' after expression")
+
+		return NewGroupingExpression(expr)
 	}
 
-	return nil, errors.New("expect expression")
+	loxerror.Error(p.peek().Line, "expect expression")
+	panic(loxerror.ParserError{Message: "expect expression"})
 }
 
 func NewParser(tokens []lexer.Token) *Parser {
@@ -529,12 +409,13 @@ func (p *Parser) previous() lexer.Token {
 }
 
 // TODO: all call site should have better error messages
-func (p *Parser) consume(tokenType lexer.TokenType, message string) (lexer.Token, error) {
+func (p *Parser) consume(tokenType lexer.TokenType, message string) lexer.Token {
 	if p.check(tokenType) {
-		return p.advance(), nil
+		return p.advance()
 	}
 
-	return p.peek(), errors.New(message)
+	loxerror.Error(p.peek().Line, message)
+	panic(loxerror.ParserError{Message: message})
 }
 
 func (p *Parser) synchronize() {

@@ -47,10 +47,10 @@ func run(sourceCode string) {
 	lexer := lexer.NewLexer(sourceCode)
 	tokens := lexer.Tokens()
 	parser := ast.NewParser(tokens)
-	statements, err := parser.Parse()
+	statements := parser.Parse()
 
-	if loxerror.HadError || err != nil {
-		fmt.Println(err)
+	if loxerror.HadError {
+		return
 	}
 
 	interpreter.Eval(statements)
