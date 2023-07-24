@@ -58,13 +58,15 @@ func run(sourceCode string) {
 
 func main() {
 	const maxArgs = 2
-	if nbArgs := len(os.Args); nbArgs > maxArgs {
+	nbArgs := len(os.Args)
+	switch {
+	case nbArgs > maxArgs:
 		fmt.Println("Usage: glox [script]")
 		os.Exit(sysexits.Usage)
-	} else if nbArgs == maxArgs {
+	case nbArgs == maxArgs:
 		fmt.Printf("Run file %v\n", os.Args[1])
 		RunFile(os.Args[1])
-	} else {
+	default:
 		RunPrompt()
 	}
 }

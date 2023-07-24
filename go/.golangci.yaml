@@ -36,6 +36,7 @@ linters:
     - cyclop
     - varnamelen
     - forbidigo
+    - interfacebloat
     # Might enable later
     - goerr113
     - exhaustive

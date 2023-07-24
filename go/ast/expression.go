@@ -100,3 +100,21 @@ func NewAssignmentExpression(name lexer.Token, value Expression) *AssignmentExpr
 func (e *AssignmentExpression) Accept(visitor Visitor) {
 	visitor.VisitAssignmentExpression(e)
 }
+
+type LogicalExpression struct {
+	LHS      Expression
+	Operator lexer.Token
+	RHS      Expression
+}
+
+func NewLogicalExpression(lhs Expression, operator lexer.Token, rhs Expression) *LogicalExpression {
+	return &LogicalExpression{
+		LHS:      lhs,
+		Operator: operator,
+		RHS:      rhs,
+	}
+}
+
+func (e *LogicalExpression) Accept(visitor Visitor) {
+	visitor.VisitLogicalExpression(e)
+}

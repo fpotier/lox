@@ -34,7 +34,11 @@ import (
 // expression -> assignment
 //
 // assignment -> IDENTIFIER "=" assignment
-//               | equality
+//               | logic_or
+//
+// logic_or -> logic_and ( "or" logic_and )*
+//
+// logic_and -> equality ( "and" equality )*
 //
 // equality -> comparison ( ( "!=" | "==" ) comparison ) *
 //
@@ -162,12 +166,14 @@ func (p *Parser) printStatement() (Statement, error) {
 }
 
 func (p *Parser) ifStatement() (Statement, error) {
-	p.consume(lexer.LeftParenthesis, "Expect '(' after 'if' statement")
+	// TODO error handling
+	_, _ = p.consume(lexer.LeftParenthesis, "Expect '(' after 'if' statement")
 	expr, err := p.expression()
 	if err != nil {
 		return nil, err
 	}
-	p.consume(lexer.RightParenthesis, "Expect ')' after 'if' condition")
+	// TODO error handling
+	_, _ = p.consume(lexer.RightParenthesis, "Expect ')' after 'if' condition")
 	thenCode, err := p.statement()
 	if err != nil {
 		return nil, err
@@ -200,7 +206,7 @@ func (p *Parser) expression() (Expression, error) {
 }
 
 func (p *Parser) assignment() (Expression, error) {
-	expression, err := p.equality()
+	expression, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -224,6 +230,42 @@ func (p *Parser) assignment() (Expression, error) {
 	}
 
 	return expression, nil
+}
+
+func (p *Parser) or() (Expression, error) {
+	expr, err := p.and()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(lexer.Or) {
+		operator := p.previous()
+		rhs, err := p.and()
+		if err != nil {
+			return nil, err
+		}
+		expr = NewLogicalExpression(expr, operator, rhs)
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) and() (Expression, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(lexer.And) {
+		operator := p.previous()
+		rhs, err := p.equality()
+		if err != nil {
+			return nil, err
+		}
+		expr = NewLogicalExpression(expr, operator, rhs)
+	}
+
+	return expr, nil
 }
 
 func (p *Parser) equality() (Expression, error) {

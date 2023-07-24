@@ -68,13 +68,13 @@ func (i *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
 	}
 }
 
-func (visitor *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStatement) {
+func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStatement) {
 	var value ast.LoxValue
 	if variableStatement.Initializer != nil {
-		value = visitor.evaluate(variableStatement.Initializer)
+		value = i.evaluate(variableStatement.Initializer)
 	}
 
-	visitor.environment.Define(variableStatement.Name.Lexeme, value)
+	i.environment.Define(variableStatement.Name.Lexeme, value)
 }
 
 func (i *Interpreter) VisitBlockStatement(blockStatement *ast.BlockStatement) {
@@ -131,6 +131,18 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpressi
 	}
 }
 
+func (i *Interpreter) VisitLogicalExpression(logicalExpression *ast.LogicalExpression) {
+	lhs := i.evaluate(logicalExpression.LHS)
+	switch {
+	case logicalExpression.Operator.Type == lexer.Or && lhs.IsTruthy():
+		i.Value = lhs
+	case logicalExpression.Operator.Type == lexer.And && !lhs.IsTruthy():
+		i.Value = lhs
+	default:
+		i.Value = i.evaluate(logicalExpression.RHS)
+	}
+}
+
 func (i *Interpreter) VisitGroupingExpression(groupingExpression *ast.GroupingExpression) {
 	i.Value = i.evaluate(groupingExpression.Expr)
 }
@@ -181,6 +193,7 @@ func (i *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
 	newVisitor := &Interpreter{
 		Value:           nil,
 		HadRuntimeError: false,
+		OutputStream:    os.Stdout,
 		environment:     i.environment,
 	}
 	expression.Accept(newVisitor)

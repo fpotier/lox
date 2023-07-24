@@ -7,6 +7,7 @@ type Visitor interface {
 	VisitUnaryExpression(*UnaryExpression)
 	VisitVariableExpression(*VariableExpression)
 	VisitAssignmentExpression(*AssignmentExpression)
+	VisitLogicalExpression(*LogicalExpression)
 
 	VisitExpressionStatement(*ExpressionStatement)
 	VisitPrintStatement(*PrintStatement)
