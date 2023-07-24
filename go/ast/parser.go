@@ -21,10 +21,13 @@ import (
 // block -> "{" declaration* "}"
 //
 // statement -> expressionStatement
+//              | forStatement
 //              | ifStatement
 //              | printStatement
 //              | whileStatement
 //              | block
+//
+// forStatement -> "for" "(" (varDecl | expression Statement | ";") expression? ";" expression? ")" statement
 //
 // ifStatement -> "if" "(" expression ")" ( "else" statement )?
 //
@@ -147,6 +150,8 @@ func (p *Parser) block() ([]Statement, error) {
 
 func (p *Parser) statement() (Statement, error) {
 	switch {
+	case p.match(lexer.For):
+		return p.forStatement()
 	case p.match(lexer.Print):
 		return p.printStatement()
 	case p.match(lexer.If):
@@ -159,6 +164,68 @@ func (p *Parser) statement() (Statement, error) {
 	default:
 		return p.expressionStatement()
 	}
+}
+
+func (p *Parser) forStatement() (Statement, error) {
+	// TODO error handling
+	_, _ = p.consume(lexer.LeftParenthesis, "Expect '(' after 'for'")
+	var initializer Statement
+	var err error
+	switch {
+	case p.match(lexer.Semicolon):
+		// Do nothing
+		initializer = nil
+	case p.match(lexer.Var):
+		initializer, err = p.varDeclaration()
+		if err != nil {
+			return nil, err
+		}
+	default:
+		initializer, err = p.expressionStatement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var condition Expression
+	if !p.check(lexer.Semicolon) {
+		condition, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	// TODO error handling
+	_, _ = p.consume(lexer.Semicolon, "Expect ';' after loop condition")
+
+	var increment Expression
+	if !p.check(lexer.RightParenthesis) {
+		increment, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(lexer.RightParenthesis, "Expect ')' after for clauses")
+
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	if increment != nil {
+		body = NewBlockStatement([]Statement{body, NewExpressionStatement(increment)})
+	}
+
+	if condition == nil {
+		condition = NewLiteralExpression(NewBooleanValue(true))
+	}
+
+	newBody := NewWhileStatement(condition, body)
+	var forLoop Statement
+	if initializer != nil {
+		forLoop = NewBlockStatement([]Statement{initializer, newBody})
+	}
+
+	return forLoop, nil
 }
 
 func (p *Parser) printStatement() (Statement, error) {
@@ -198,12 +265,14 @@ func (p *Parser) ifStatement() (Statement, error) {
 }
 
 func (p *Parser) whileStatment() (Statement, error) {
-	p.consume(lexer.LeftParenthesis, "Expect '(' after 'while'")
+	// TODO error handling
+	_, _ = p.consume(lexer.LeftParenthesis, "Expect '(' after 'while'")
 	condition, err := p.expression()
 	if err != nil {
 		return nil, err
 	}
-	p.consume(lexer.RightParenthesis, "Expect ')' after 'while' condition")
+	// TODO error handling
+	_, _ = p.consume(lexer.RightParenthesis, "Expect ')' after 'while' condition")
 	body, err := p.statement()
 	if err != nil {
 		return nil, err
