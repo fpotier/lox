@@ -70,3 +70,25 @@ func (o ObjectValue) Equals(_ LoxValue) bool {
 	// TODO implement
 	return false
 }
+
+type LoxCallable interface {
+	Call(*Interpreter, []Expression) LoxValue
+	Arity() int
+}
+
+type NativeFunction struct {
+	name  string
+	arity int
+	code  func(*Interpreter, []Expression) LoxValue
+}
+
+func (f NativeFunction) IsBoolean() bool        { return false }
+func (f NativeFunction) IsNumber() bool         { return false }
+func (f NativeFunction) IsString() bool         { return false }
+func (f NativeFunction) IsTruthy() bool         { return false }
+func (f NativeFunction) String() string         { return fmt.Sprintf("<native function> %s", f.name) }
+func (f NativeFunction) Equals(_ LoxValue) bool { return false }
+func (f NativeFunction) Call(i *Interpreter, arguments []Expression) LoxValue {
+	return f.code(i, arguments)
+}
+func (f NativeFunction) Arity() int { return f.arity }

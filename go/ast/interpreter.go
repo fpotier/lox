@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/fpotier/crafting-interpreters/go/loxerror"
@@ -15,16 +16,30 @@ type Interpreter struct {
 	Value           LoxValue
 	HadRuntimeError bool
 	OutputStream    io.Writer
+	globals         *Environment
 	environment     *Environment
 }
 
 func NewInterpreter() *Interpreter {
-	return &Interpreter{
+	i := Interpreter{
 		Value:           nil,
 		HadRuntimeError: false,
 		OutputStream:    os.Stdout,
-		environment:     NewEnvironment(),
+		globals:         NewEnvironment(),
 	}
+	i.environment = i.globals
+
+	nativeClock := NativeFunction{
+		name:  "clock",
+		arity: 0,
+		code: func(*Interpreter, []Expression) LoxValue {
+			return NewNumberValue(float64(time.Now().UnixMilli() / 1000))
+		},
+	}
+
+	i.globals.Define(nativeClock.name, nativeClock)
+
+	return &i
 }
 
 func (i *Interpreter) Eval(statements []Statement) {
@@ -176,6 +191,26 @@ func (i *Interpreter) VisitAssignmentExpression(assignmentExpression *Assignment
 	value := i.evaluate(assignmentExpression.Value)
 	i.environment.Assign(assignmentExpression.Name, value)
 	i.Value = value
+}
+
+func (i *Interpreter) VisitCallExpression(callExpression *CallExpression) {
+	callee := i.evaluate(callExpression.Callee)
+
+	arguments := make([]Expression, 0)
+	for _, argument := range callExpression.Args {
+		arguments = append(arguments, argument)
+	}
+
+	if function, ok := callee.(LoxCallable); ok {
+		if function.Arity() != len(arguments) {
+			panic(loxerror.RuntimeError{
+				Message: fmt.Sprintf("Expected %d arguments but got %d", function.Arity(), len(arguments)),
+			})
+		}
+		i.Value = function.Call(i, arguments)
+	} else {
+		panic(loxerror.RuntimeError{Message: "Can only call functions and classes"})
+	}
 }
 
 func (i *Interpreter) executeBlock(statements []Statement, subEnvironment *Environment) {

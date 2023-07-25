@@ -52,7 +52,11 @@ import (
 // factor -> unary ( ( "/" | "*" ) unary )*
 //
 // unary -> ( "!" | "-" ) unary
-//          | primary
+//          | call
+//
+// call -> primary ( "(" arguments? ")" )*
+//
+// arguments -> expression ( "," expression )*
 //
 // primary -> NUMBER
 //            | STRING
@@ -327,7 +331,39 @@ func (p *Parser) unary() Expression {
 		return NewUnaryExpression(operator, rhs)
 	}
 
-	return p.primary()
+	return p.call()
+}
+
+func (p *Parser) call() Expression {
+	expr := p.primary()
+
+	for {
+		if p.match(lexer.LeftParenthesis) {
+			expr = p.finishCall(expr)
+		} else {
+			break
+		}
+	}
+
+	return expr
+}
+
+func (p *Parser) finishCall(callee Expression) Expression {
+	const MaxArgs = 255
+
+	args := make([]Expression, 0)
+	if !p.check(lexer.RightParenthesis) {
+		for next := true; next; next = p.match(lexer.Comma) {
+			if len(args) >= MaxArgs {
+				loxerror.Error(p.peek().Line, "Can't have more than 255 arguments")
+			}
+			args = append(args, p.expression())
+		}
+	}
+
+	position := p.consume(lexer.RightParenthesis, "Execpect ')' after function arguments")
+
+	return NewCallExpression(callee, position, args)
 }
 
 func (p *Parser) primary() Expression {

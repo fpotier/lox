@@ -9,30 +9,30 @@ import (
 
 type Environment struct {
 	enclosing *Environment
-	values    map[string]LoxValue
+	symbols   map[string]LoxValue
 }
 
 func NewEnvironment() *Environment {
 	return &Environment{
 		enclosing: nil,
-		values:    make(map[string]LoxValue),
+		symbols:   make(map[string]LoxValue),
 	}
 }
 
 func NewSubEnvironment(enclosing *Environment) *Environment {
 	return &Environment{
 		enclosing: enclosing,
-		values:    make(map[string]LoxValue),
+		symbols:   make(map[string]LoxValue),
 	}
 }
 
 func (e *Environment) Define(name string, value LoxValue) {
 	// Note: redeclaring a top-level (global) variable is allowed
-	e.values[name] = value
+	e.symbols[name] = value
 }
 
 func (e *Environment) Get(name lexer.Token) LoxValue {
-	if val, ok := e.values[name.Lexeme]; ok {
+	if val, ok := e.symbols[name.Lexeme]; ok {
 		return val
 	}
 
@@ -44,8 +44,8 @@ func (e *Environment) Get(name lexer.Token) LoxValue {
 }
 
 func (e *Environment) Assign(name lexer.Token, value LoxValue) {
-	if _, ok := e.values[name.Lexeme]; ok {
-		e.values[name.Lexeme] = value
+	if _, ok := e.symbols[name.Lexeme]; ok {
+		e.symbols[name.Lexeme] = value
 		return
 	}
 

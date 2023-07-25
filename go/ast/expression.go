@@ -118,3 +118,21 @@ func NewLogicalExpression(lhs Expression, operator lexer.Token, rhs Expression) 
 func (e *LogicalExpression) Accept(visitor Visitor) {
 	visitor.VisitLogicalExpression(e)
 }
+
+type CallExpression struct {
+	Callee   Expression
+	Position lexer.Token
+	Args     []Expression
+}
+
+func NewCallExpression(callee Expression, position lexer.Token, args []Expression) *CallExpression {
+	return &CallExpression{
+		Callee:   callee,
+		Position: position,
+		Args:     args,
+	}
+}
+
+func (e *CallExpression) Accept(visitor Visitor) {
+	visitor.VisitCallExpression(e)
+}
