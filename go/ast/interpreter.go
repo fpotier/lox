@@ -102,7 +102,7 @@ func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
 }
 
 func (i *Interpreter) VisitFunctionStatement(functionStatement *FunctionStatement) {
-	function := NewLoxFunction(functionStatement)
+	function := NewLoxFunction(functionStatement, i.environment)
 	i.environment.Define(functionStatement.Name.Lexeme, function)
 }
 
