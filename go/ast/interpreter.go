@@ -1,4 +1,4 @@
-package visitor
+package ast
 
 import (
 	"fmt"
@@ -6,17 +6,16 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/fpotier/crafting-interpreters/go/ast"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/fpotier/crafting-interpreters/go/loxerror"
 )
 
 type Interpreter struct {
 	// Value can be virtually anything (string, number, boolean, object, nil, etc.)
-	Value           ast.LoxValue
+	Value           LoxValue
 	HadRuntimeError bool
 	OutputStream    io.Writer
-	environment     *ast.Environment
+	environment     *Environment
 }
 
 func NewInterpreter() *Interpreter {
@@ -24,11 +23,11 @@ func NewInterpreter() *Interpreter {
 		Value:           nil,
 		HadRuntimeError: false,
 		OutputStream:    os.Stdout,
-		environment:     ast.NewEnvironment(),
+		environment:     NewEnvironment(),
 	}
 }
 
-func (i *Interpreter) Eval(statements []ast.Statement) {
+func (i *Interpreter) Eval(statements []Statement) {
 	// This allows us to emulate a try/catch mechanism to exit the visitor as soon as possible
 	// without changing the Visit...() methods to return an error and propagate manually these errors
 	defer func() {
@@ -47,7 +46,7 @@ func (i *Interpreter) Eval(statements []ast.Statement) {
 	}
 }
 
-func (i *Interpreter) VisitIfStatement(ifStatment *ast.IfStatement) {
+func (i *Interpreter) VisitIfStatement(ifStatment *IfStatement) {
 	if i.evaluate(ifStatment.Condition).IsTruthy() {
 		i.execute(ifStatment.ThenCode)
 	} else if ifStatment.ElseCode != nil {
@@ -55,17 +54,17 @@ func (i *Interpreter) VisitIfStatement(ifStatment *ast.IfStatement) {
 	}
 }
 
-func (i *Interpreter) VisitWhileStatement(whileStatement *ast.WhileStatement) {
+func (i *Interpreter) VisitWhileStatement(whileStatement *WhileStatement) {
 	for i.evaluate(whileStatement.Condition).IsTruthy() {
 		i.execute(whileStatement.Body)
 	}
 }
 
-func (i *Interpreter) VisitExpressionStatement(expressionStatement *ast.ExpressionStatement) {
+func (i *Interpreter) VisitExpressionStatement(expressionStatement *ExpressionStatement) {
 	i.evaluate(expressionStatement.Expression)
 }
 
-func (i *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
+func (i *Interpreter) VisitPrintStatement(printStatement *PrintStatement) {
 	value := i.evaluate(printStatement.Expression)
 	if value == nil {
 		fmt.Fprint(i.OutputStream, "<nil>\n")
@@ -74,8 +73,8 @@ func (i *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
 	}
 }
 
-func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStatement) {
-	var value ast.LoxValue
+func (i *Interpreter) VisitVariableStatement(variableStatement *VariableStatement) {
+	var value LoxValue
 	if variableStatement.Initializer != nil {
 		value = i.evaluate(variableStatement.Initializer)
 	}
@@ -83,11 +82,11 @@ func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStat
 	i.environment.Define(variableStatement.Name.Lexeme, value)
 }
 
-func (i *Interpreter) VisitBlockStatement(blockStatement *ast.BlockStatement) {
-	i.executeBlock(blockStatement.Statements, ast.NewSubEnvironment(i.environment))
+func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
+	i.executeBlock(blockStatement.Statements, NewSubEnvironment(i.environment))
 }
 
-func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpression) {
+func (i *Interpreter) VisitBinaryExpression(binaryExpression *BinaryExpression) {
 	lhs := i.evaluate(binaryExpression.LHS)
 	rhs := i.evaluate(binaryExpression.RHS)
 
@@ -95,9 +94,9 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpressi
 	case lexer.Plus:
 		switch {
 		case lhs.IsNumber() && rhs.IsNumber():
-			i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value + rhs.(*ast.NumberValue).Value)
+			i.Value = NewNumberValue(lhs.(*NumberValue).Value + rhs.(*NumberValue).Value)
 		case lhs.IsString() && rhs.IsString():
-			i.Value = ast.NewStringValue(lhs.(*ast.StringValue).Value + rhs.(*ast.StringValue).Value)
+			i.Value = NewStringValue(lhs.(*StringValue).Value + rhs.(*StringValue).Value)
 		default:
 			// TODO: print lox types instead of go types
 			panic(loxerror.RuntimeError{
@@ -109,35 +108,35 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpressi
 		}
 	case lexer.Dash:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value - rhs.(*ast.NumberValue).Value)
+		i.Value = NewNumberValue(lhs.(*NumberValue).Value - rhs.(*NumberValue).Value)
 	case lexer.Star:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value * rhs.(*ast.NumberValue).Value)
+		i.Value = NewNumberValue(lhs.(*NumberValue).Value * rhs.(*NumberValue).Value)
 	case lexer.Slash:
 		// TODO check if rhs is 0 ?
 		// go seems kinda broken: float64 / 0 = +Inf
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value / rhs.(*ast.NumberValue).Value)
+		i.Value = NewNumberValue(lhs.(*NumberValue).Value / rhs.(*NumberValue).Value)
 	case lexer.Greater:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value > rhs.(*ast.NumberValue).Value)
+		i.Value = NewBooleanValue(lhs.(*NumberValue).Value > rhs.(*NumberValue).Value)
 	case lexer.GreaterEqual:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value >= rhs.(*ast.NumberValue).Value)
+		i.Value = NewBooleanValue(lhs.(*NumberValue).Value >= rhs.(*NumberValue).Value)
 	case lexer.Less:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value < rhs.(*ast.NumberValue).Value)
+		i.Value = NewBooleanValue(lhs.(*NumberValue).Value < rhs.(*NumberValue).Value)
 	case lexer.LessEqual:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value <= rhs.(*ast.NumberValue).Value)
+		i.Value = NewBooleanValue(lhs.(*NumberValue).Value <= rhs.(*NumberValue).Value)
 	case lexer.EqualEqual:
-		i.Value = ast.NewBooleanValue(lhs.Equals(rhs))
+		i.Value = NewBooleanValue(lhs.Equals(rhs))
 	case lexer.BangEqual:
-		i.Value = ast.NewBooleanValue(!lhs.Equals(rhs))
+		i.Value = NewBooleanValue(!lhs.Equals(rhs))
 	}
 }
 
-func (i *Interpreter) VisitLogicalExpression(logicalExpression *ast.LogicalExpression) {
+func (i *Interpreter) VisitLogicalExpression(logicalExpression *LogicalExpression) {
 	lhs := i.evaluate(logicalExpression.LHS)
 	switch {
 	case logicalExpression.Operator.Type == lexer.Or && lhs.IsTruthy():
@@ -149,37 +148,37 @@ func (i *Interpreter) VisitLogicalExpression(logicalExpression *ast.LogicalExpre
 	}
 }
 
-func (i *Interpreter) VisitGroupingExpression(groupingExpression *ast.GroupingExpression) {
+func (i *Interpreter) VisitGroupingExpression(groupingExpression *GroupingExpression) {
 	i.Value = i.evaluate(groupingExpression.Expr)
 }
 
-func (i *Interpreter) VisitLiteralExpression(literalExpression *ast.LiteralExpression) {
+func (i *Interpreter) VisitLiteralExpression(literalExpression *LiteralExpression) {
 	i.Value = literalExpression.LoxValue()
 }
 
-func (i *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpression) {
+func (i *Interpreter) VisitUnaryExpression(unaryExpression *UnaryExpression) {
 	rhs := i.evaluate(unaryExpression.RHS)
 
 	switch unaryExpression.Operator.Type {
 	case lexer.Bang:
-		i.Value = ast.NewBooleanValue(!rhs.IsTruthy())
+		i.Value = NewBooleanValue(!rhs.IsTruthy())
 	case lexer.Dash:
 		assertNumberOperand(unaryExpression.Operator, rhs)
-		i.Value = ast.NewNumberValue(-rhs.(*ast.NumberValue).Value)
+		i.Value = NewNumberValue(-rhs.(*NumberValue).Value)
 	}
 }
 
-func (i *Interpreter) VisitVariableExpression(variableExpression *ast.VariableExpression) {
+func (i *Interpreter) VisitVariableExpression(variableExpression *VariableExpression) {
 	i.Value = i.environment.Get(variableExpression.Name)
 }
 
-func (i *Interpreter) VisitAssignmentExpression(assignmentExpression *ast.AssignmentExpression) {
+func (i *Interpreter) VisitAssignmentExpression(assignmentExpression *AssignmentExpression) {
 	value := i.evaluate(assignmentExpression.Value)
 	i.environment.Assign(assignmentExpression.Name, value)
 	i.Value = value
 }
 
-func (i *Interpreter) executeBlock(statements []ast.Statement, subEnvironment *ast.Environment) {
+func (i *Interpreter) executeBlock(statements []Statement, subEnvironment *Environment) {
 	previousEnv := i.environment
 	i.environment = subEnvironment
 	// TODO error handling
@@ -190,11 +189,11 @@ func (i *Interpreter) executeBlock(statements []ast.Statement, subEnvironment *a
 	i.environment = previousEnv
 }
 
-func (i *Interpreter) execute(statement ast.Statement) {
+func (i *Interpreter) execute(statement Statement) {
 	statement.Accept(i)
 }
 
-func (i *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
+func (i *Interpreter) evaluate(expression Expression) LoxValue {
 	// TODO: handle error -> causes nil pointer dereference
 	newVisitor := &Interpreter{
 		Value:           nil,
@@ -207,7 +206,7 @@ func (i *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
 	return newVisitor.Value
 }
 
-func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxValue) {
+func assertNumberOperands(operator lexer.Token, lhs LoxValue, rhs LoxValue) {
 	if !lhs.IsNumber() || !rhs.IsNumber() {
 		panic(loxerror.RuntimeError{
 			// TODO: print lox types instead of go types
@@ -219,7 +218,7 @@ func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxVal
 	}
 }
 
-func assertNumberOperand(operator lexer.Token, rhs ast.LoxValue) {
+func assertNumberOperand(operator lexer.Token, rhs LoxValue) {
 	if !rhs.IsNumber() {
 		panic(loxerror.RuntimeError{
 			// TODO: print lox types instead of go types

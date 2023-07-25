@@ -7,14 +7,13 @@ import (
 	"os"
 
 	"github.com/fpotier/crafting-interpreters/go/ast"
-	"github.com/fpotier/crafting-interpreters/go/ast/visitor"
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/fpotier/crafting-interpreters/go/loxerror"
 	"github.com/sean-/sysexits"
 )
 
 // Maybe get rid of this global variable
-var interpreter = visitor.NewInterpreter()
+var interpreter = ast.NewInterpreter()
 
 func RunPrompt() {
 	scanner := bufio.NewScanner(os.Stdin)
