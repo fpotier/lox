@@ -1,6 +1,8 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type LoxValue interface {
 	IsBoolean() bool
@@ -106,14 +108,25 @@ func (f LoxFunction) IsString() bool         { return false }
 func (f LoxFunction) IsTruthy() bool         { return false }
 func (f LoxFunction) String() string         { return fmt.Sprintf("<function> %s", f.Declaration.Name.Lexeme) }
 func (f LoxFunction) Equals(_ LoxValue) bool { return false }
-func (f LoxFunction) Call(i *Interpreter, arguments []LoxValue) LoxValue {
+func (f LoxFunction) Call(i *Interpreter, arguments []LoxValue) (returnValue LoxValue) {
 	environment := NewSubEnvironment(i.environment)
 	for i := range f.Declaration.Parameters {
 		environment.Define(f.Declaration.Parameters[i].Lexeme, arguments[i])
 	}
 
+	// TODO: should we wrap the LoxValue in Return...?
+	defer func() {
+		if r := recover(); r != nil {
+			if rt, ok := r.(LoxValue); ok {
+				returnValue = rt
+				return
+			}
+			panic(r)
+		}
+	}()
+
 	i.executeBlock(f.Declaration.Body, environment)
 
-	return nil
+	return
 }
 func (f LoxFunction) Arity() int { return len(f.Declaration.Parameters) }

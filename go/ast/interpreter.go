@@ -106,6 +106,15 @@ func (i *Interpreter) VisitFunctionStatement(functionStatement *FunctionStatemen
 	i.environment.Define(functionStatement.Name.Lexeme, function)
 }
 
+func (i *Interpreter) VisitReturnStatement(returnStatement *ReturnStatement) {
+	var value LoxValue
+	if returnStatement.Value != nil {
+		value = i.evaluate(returnStatement.Value)
+	}
+
+	panic(value)
+}
+
 func (i *Interpreter) VisitBinaryExpression(binaryExpression *BinaryExpression) {
 	lhs := i.evaluate(binaryExpression.LHS)
 	rhs := i.evaluate(binaryExpression.RHS)

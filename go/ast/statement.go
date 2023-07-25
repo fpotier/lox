@@ -113,3 +113,19 @@ func NewFunctionStatement(name lexer.Token, parameters []lexer.Token, body []Sta
 func (s *FunctionStatement) Accept(visitor Visitor) {
 	visitor.VisitFunctionStatement(s)
 }
+
+type ReturnStatement struct {
+	Keyword lexer.Token
+	Value   Expression
+}
+
+func NewReturnStatement(keyword lexer.Token, value Expression) *ReturnStatement {
+	return &ReturnStatement{
+		Keyword: keyword,
+		Value:   value,
+	}
+}
+
+func (s *ReturnStatement) Accept(visitor Visitor) {
+	visitor.VisitReturnStatement(s)
+}

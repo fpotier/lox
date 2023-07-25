@@ -22,13 +22,12 @@ import (
 // function -> IDENTIFIER "(" parameters? ")" block
 //
 // block -> "{" declaration* "}"
-// block -> "{" declaration* "}"
-// block -> "{" declaration* "}"
 //
 // statement -> expressionStatement
 //              | forStatement
 //              | ifStatement
 //              | printStatement
+//              | returnStatement
 //              | whileStatement
 //              | block
 //
@@ -37,6 +36,8 @@ import (
 // ifStatement -> "if" "(" expression ")" ( "else" statement )?
 //
 // printStatement -> "print" expression ";"
+//
+// returnStatement -> "return" expression? ";"
 //
 // whileStatment -> "while" "(" expression ")" statement
 //
@@ -168,6 +169,8 @@ func (p *Parser) statement() Statement {
 		return p.printStatement()
 	case p.match(lexer.If):
 		return p.ifStatement()
+	case p.match(lexer.Return):
+		return p.returnStatement()
 	case p.match(lexer.While):
 		return p.whileStatment()
 	case p.match(lexer.LeftBrace):
@@ -239,6 +242,19 @@ func (p *Parser) ifStatement() Statement {
 	}
 
 	return NewIfStatment(expr, thenCode, elseCode)
+}
+
+func (p *Parser) returnStatement() Statement {
+	keyword := p.previous()
+	var value Expression
+
+	if !p.check(lexer.Semicolon) {
+		value = p.expression()
+	}
+
+	p.consume(lexer.Semicolon, "Expect ';' after return value")
+
+	return NewReturnStatement(keyword, value)
 }
 
 func (p *Parser) whileStatment() Statement {
