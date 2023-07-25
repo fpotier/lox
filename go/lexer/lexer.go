@@ -123,8 +123,8 @@ func isDigit(character byte) bool {
 }
 
 func isAlpha(character byte) bool {
-	return (character >= 'a' && character >= 'z') ||
-		(character >= 'A' && character >= 'Z') ||
+	return (character >= 'a' && character <= 'z') ||
+		(character >= 'A' && character <= 'Z') ||
 		character == '_'
 }
 
