@@ -32,8 +32,8 @@ func NewInterpreter() *Interpreter {
 	nativeClock := NativeFunction{
 		name:  "clock",
 		arity: 0,
-		code: func(*Interpreter, []Expression) LoxValue {
-			return NewNumberValue(float64(time.Now().UnixMilli() / 1000))
+		code: func(*Interpreter, []LoxValue) LoxValue {
+			return NewNumberValue(float64(time.Now().UnixMilli()) / 1000.0)
 		},
 	}
 
@@ -99,6 +99,11 @@ func (i *Interpreter) VisitVariableStatement(variableStatement *VariableStatemen
 
 func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
 	i.executeBlock(blockStatement.Statements, NewSubEnvironment(i.environment))
+}
+
+func (i *Interpreter) VisitFunctionStatement(functionStatement *FunctionStatement) {
+	function := NewLoxFunction(functionStatement)
+	i.environment.Define(functionStatement.Name.Lexeme, function)
 }
 
 func (i *Interpreter) VisitBinaryExpression(binaryExpression *BinaryExpression) {
@@ -196,9 +201,9 @@ func (i *Interpreter) VisitAssignmentExpression(assignmentExpression *Assignment
 func (i *Interpreter) VisitCallExpression(callExpression *CallExpression) {
 	callee := i.evaluate(callExpression.Callee)
 
-	arguments := make([]Expression, 0)
+	arguments := make([]LoxValue, 0)
 	for _, argument := range callExpression.Args {
-		arguments = append(arguments, argument)
+		arguments = append(arguments, i.evaluate(argument))
 	}
 
 	if function, ok := callee.(LoxCallable); ok {

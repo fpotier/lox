@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/fpotier/crafting-interpreters/go/lexer"
 	"github.com/fpotier/crafting-interpreters/go/loxerror"
 )
@@ -10,11 +12,17 @@ import (
 // program -> statement* EOF
 //
 // declaration -> varDeclaration
+//                | funDeclaration
 //                | statement
-//                | block
 //
 // varDeclaration -> IDENTIFIER ( "=" expression )? ";"
 //
+// funDeclaration -> "fun" function
+//
+// function -> IDENTIFIER "(" parameters? ")" block
+//
+// block -> "{" declaration* "}"
+// block -> "{" declaration* "}"
 // block -> "{" declaration* "}"
 //
 // statement -> expressionStatement
@@ -96,6 +104,8 @@ func (p *Parser) declaration() Statement {
 	switch {
 	case p.match(lexer.Var):
 		statement = p.varDeclaration()
+	case p.match(lexer.Fun):
+		statement = p.function("function")
 	case p.match(lexer.LeftBrace):
 		statement = NewBlockStatement(p.block())
 	default:
@@ -115,6 +125,28 @@ func (p *Parser) varDeclaration() Statement {
 	p.consume(lexer.Semicolon, "Expect ';' after variable declaration")
 
 	return NewVariableStatement(name, initializer)
+}
+
+func (p *Parser) function(kind string) Statement {
+	name := p.consume(lexer.Identifier, fmt.Sprintf("Expect %s name.", kind))
+
+	p.consume(lexer.LeftParenthesis, fmt.Sprintf("Expect '(' after %s name.", kind))
+	parameters := make([]lexer.Token, 0)
+	if !p.check(lexer.RightParenthesis) {
+		for next := true; next; next = p.match(lexer.Comma) {
+			if len(parameters) >= 255 {
+				loxerror.Error(p.peek().Line, "Can't have more than 255 parameters")
+			}
+
+			parameters = append(parameters, p.consume(lexer.Identifier, "Expect parameter name"))
+		}
+	}
+
+	p.consume(lexer.RightParenthesis, "Expect ')' after parameters")
+	p.consume(lexer.LeftBrace, "Expect '{' after parameters")
+	body := p.block()
+
+	return NewFunctionStatement(name, parameters, body)
 }
 
 func (p *Parser) block() []Statement {

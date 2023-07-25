@@ -16,4 +16,5 @@ type Visitor interface {
 	VisitBlockStatement(*BlockStatement)
 	VisitIfStatement(*IfStatement)
 	VisitWhileStatement(*WhileStatement)
+	VisitFunctionStatement(*FunctionStatement)
 }

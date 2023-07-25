@@ -72,14 +72,14 @@ func (o ObjectValue) Equals(_ LoxValue) bool {
 }
 
 type LoxCallable interface {
-	Call(*Interpreter, []Expression) LoxValue
+	Call(*Interpreter, []LoxValue) LoxValue
 	Arity() int
 }
 
 type NativeFunction struct {
 	name  string
 	arity int
-	code  func(*Interpreter, []Expression) LoxValue
+	code  func(*Interpreter, []LoxValue) LoxValue
 }
 
 func (f NativeFunction) IsBoolean() bool        { return false }
@@ -88,7 +88,32 @@ func (f NativeFunction) IsString() bool         { return false }
 func (f NativeFunction) IsTruthy() bool         { return false }
 func (f NativeFunction) String() string         { return fmt.Sprintf("<native function> %s", f.name) }
 func (f NativeFunction) Equals(_ LoxValue) bool { return false }
-func (f NativeFunction) Call(i *Interpreter, arguments []Expression) LoxValue {
+func (f NativeFunction) Call(i *Interpreter, arguments []LoxValue) LoxValue {
 	return f.code(i, arguments)
 }
 func (f NativeFunction) Arity() int { return f.arity }
+
+type LoxFunction struct {
+	Declaration *FunctionStatement
+}
+
+func NewLoxFunction(declaration *FunctionStatement) *LoxFunction {
+	return &LoxFunction{Declaration: declaration}
+}
+func (f LoxFunction) IsBoolean() bool        { return false }
+func (f LoxFunction) IsNumber() bool         { return false }
+func (f LoxFunction) IsString() bool         { return false }
+func (f LoxFunction) IsTruthy() bool         { return false }
+func (f LoxFunction) String() string         { return fmt.Sprintf("<function> %s", f.Declaration.Name.Lexeme) }
+func (f LoxFunction) Equals(_ LoxValue) bool { return false }
+func (f LoxFunction) Call(i *Interpreter, arguments []LoxValue) LoxValue {
+	environment := NewSubEnvironment(i.environment)
+	for i := range f.Declaration.Parameters {
+		environment.Define(f.Declaration.Parameters[i].Lexeme, arguments[i])
+	}
+
+	i.executeBlock(f.Declaration.Body, environment)
+
+	return nil
+}
+func (f LoxFunction) Arity() int { return len(f.Declaration.Parameters) }

@@ -95,3 +95,21 @@ func NewWhileStatement(condition Expression, body Statement) *WhileStatement {
 func (s *WhileStatement) Accept(visitor Visitor) {
 	visitor.VisitWhileStatement(s)
 }
+
+type FunctionStatement struct {
+	Name       lexer.Token
+	Parameters []lexer.Token
+	Body       []Statement
+}
+
+func NewFunctionStatement(name lexer.Token, parameters []lexer.Token, body []Statement) *FunctionStatement {
+	return &FunctionStatement{
+		Name:       name,
+		Parameters: parameters,
+		Body:       body,
+	}
+}
+
+func (s *FunctionStatement) Accept(visitor Visitor) {
+	visitor.VisitFunctionStatement(s)
+}
