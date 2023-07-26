@@ -69,7 +69,7 @@ func main() {
 		fmt.Println("Usage: glox [script]")
 		os.Exit(sysexits.Usage)
 	case nbArgs == maxArgs:
-		fmt.Printf("Run file %v\n", os.Args[1])
+		//fmt.Printf("Run file %v\n", os.Args[1])
 		RunFile(os.Args[1])
 	default:
 		RunPrompt()
