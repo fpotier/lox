@@ -13,11 +13,14 @@ import (
 //
 // declaration -> varDeclaration
 //                | funDeclaration
+//                | classDeclaration
 //                | statement
 //
 // varDeclaration -> IDENTIFIER ( "=" expression )? ";"
 //
 // funDeclaration -> "fun" function
+//
+// classDeclaration -> "class" IDENTIFIER "{" function* "}"
 //
 // function -> IDENTIFIER "(" parameters? ")" block
 //
@@ -45,7 +48,7 @@ import (
 //
 // expression -> assignment
 //
-// assignment -> IDENTIFIER "=" assignment
+// assignment -> ( call "." )? IDENTIFIER "=" assignment
 //               | logic_or
 //
 // logic_or -> logic_and ( "or" logic_and )*
@@ -63,7 +66,7 @@ import (
 // unary -> ( "!" | "-" ) unary
 //          | call
 //
-// call -> primary ( "(" arguments? ")" )*
+// call -> primary ( "(" arguments? ")" | "." IDENTIFIER )*
 //
 // arguments -> expression ( "," expression )*
 //
@@ -107,6 +110,8 @@ func (p *Parser) declaration() Statement {
 		statement = p.varDeclaration()
 	case p.match(lexer.Fun):
 		statement = p.function("function")
+	case p.match(lexer.Class):
+		statement = p.classDeclaration()
 	case p.match(lexer.LeftBrace):
 		statement = NewBlockStatement(p.block())
 	default:
@@ -148,6 +153,20 @@ func (p *Parser) function(kind string) Statement {
 	body := p.block()
 
 	return NewFunctionStatement(name, parameters, body)
+}
+
+func (p *Parser) classDeclaration() Statement {
+	name := p.consume(lexer.Identifier, "Expect class name")
+	p.consume(lexer.LeftBrace, "Expect '{' before class body")
+
+	methods := make([]FunctionStatement, 0)
+	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
+		methods = append(methods, *p.function("method").(*FunctionStatement))
+	}
+
+	p.consume(lexer.RightBrace, "Expect '}' after class body")
+
+	return NewClassStatement(name, methods)
 }
 
 func (p *Parser) block() []Statement {
@@ -286,8 +305,11 @@ func (p *Parser) assignment() Expression {
 		equalsToken := p.previous()
 		value := p.assignment()
 
-		if expression, ok := expression.(*VariableExpression); ok {
+		switch expression := expression.(type) {
+		case *VariableExpression:
 			return NewAssignmentExpression(expression.Name, value)
+		case *GetExpression:
+			return NewSetExpression(expression.Object, expression.Name, value)
 		}
 
 		// No need to go to put the parser in recovery mode
@@ -387,11 +409,16 @@ func (p *Parser) unary() Expression {
 func (p *Parser) call() Expression {
 	expr := p.primary()
 
+loop:
 	for {
-		if p.match(lexer.LeftParenthesis) {
+		switch {
+		case p.match(lexer.LeftParenthesis):
 			expr = p.finishCall(expr)
-		} else {
-			break
+		case p.match(lexer.Dot):
+			name := p.consume(lexer.Identifier, "Expect property name after '.'")
+			expr = NewGetExpression(expr, name)
+		default:
+			break loop
 		}
 	}
 

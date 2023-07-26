@@ -36,6 +36,15 @@ func (r *Resolver) ResolveProgram(program []Statement) {
 	}
 }
 
+func (r *Resolver) VisitGetExpression(e *GetExpression) {
+	r.resolveExpression(e.Object)
+}
+
+func (r *Resolver) VisitSetExpression(e *SetExpression) {
+	r.resolveExpression(e.Value)
+	r.resolveExpression(e.Object)
+}
+
 func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
 	if len(r.scopes) > 0 {
 		if declared, ok := r.scopes[len(r.scopes)-1][e.Name.Lexeme]; ok && !declared {
@@ -44,6 +53,11 @@ func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
 	}
 
 	r.resolveLocal(e, e.Name)
+}
+
+func (r *Resolver) VisitClassStatement(s *ClassStatement) {
+	r.declare(s.Name)
+	r.define(s.Name)
 }
 
 func (r *Resolver) VisitBlockStatement(s *BlockStatement) {

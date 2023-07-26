@@ -129,3 +129,20 @@ func NewReturnStatement(keyword lexer.Token, value Expression) *ReturnStatement 
 func (s *ReturnStatement) Accept(visitor Visitor) {
 	visitor.VisitReturnStatement(s)
 }
+
+type ClassStatement struct {
+	Name       lexer.Token
+	Superclass VariableExpression
+	Methods    []FunctionStatement
+}
+
+func NewClassStatement(name lexer.Token, methods []FunctionStatement) *ClassStatement {
+	return &ClassStatement{
+		Name:    name,
+		Methods: methods,
+	}
+}
+
+func (s *ClassStatement) Accept(visitor Visitor) {
+	visitor.VisitClassStatement(s)
+}

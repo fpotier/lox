@@ -9,6 +9,8 @@ type Visitor interface {
 	VisitAssignmentExpression(*AssignmentExpression)
 	VisitLogicalExpression(*LogicalExpression)
 	VisitCallExpression(*CallExpression)
+	VisitGetExpression(*GetExpression)
+	VisitSetExpression(*SetExpression)
 
 	VisitExpressionStatement(*ExpressionStatement)
 	VisitPrintStatement(*PrintStatement)
@@ -18,4 +20,5 @@ type Visitor interface {
 	VisitWhileStatement(*WhileStatement)
 	VisitFunctionStatement(*FunctionStatement)
 	VisitReturnStatement(*ReturnStatement)
+	VisitClassStatement(*ClassStatement)
 }

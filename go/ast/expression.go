@@ -136,3 +136,34 @@ func NewCallExpression(callee Expression, position lexer.Token, args []Expressio
 func (e *CallExpression) Accept(visitor Visitor) {
 	visitor.VisitCallExpression(e)
 }
+
+type GetExpression struct {
+	Object Expression
+	Name   lexer.Token
+}
+
+func NewGetExpression(object Expression, name lexer.Token) *GetExpression {
+	return &GetExpression{Object: object, Name: name}
+}
+
+func (e *GetExpression) Accept(visitor Visitor) {
+	visitor.VisitGetExpression(e)
+}
+
+type SetExpression struct {
+	Object Expression
+	Name   lexer.Token
+	Value  Expression
+}
+
+func NewSetExpression(object Expression, name lexer.Token, value Expression) *SetExpression {
+	return &SetExpression{
+		Object: object,
+		Name:   name,
+		Value:  value,
+	}
+}
+
+func (e *SetExpression) Accept(visitor Visitor) {
+	visitor.VisitSetExpression(e)
+}

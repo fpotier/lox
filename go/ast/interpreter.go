@@ -103,6 +103,12 @@ func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
 	i.executeBlock(blockStatement.Statements, NewSubEnvironment(i.environment))
 }
 
+func (i *Interpreter) VisitClassStatement(classStatement *ClassStatement) {
+	i.environment.Define(classStatement.Name.Lexeme, nil)
+	class := NewLoxClass(classStatement.Name.Lexeme)
+	i.environment.Assign(classStatement.Name, class)
+}
+
 func (i *Interpreter) VisitFunctionStatement(functionStatement *FunctionStatement) {
 	function := NewLoxFunction(functionStatement, i.environment)
 	i.environment.Define(functionStatement.Name.Lexeme, function)
@@ -231,6 +237,29 @@ func (i *Interpreter) VisitCallExpression(callExpression *CallExpression) {
 	} else {
 		panic(loxerror.RuntimeError{Message: "Can only call functions and classes"})
 	}
+}
+
+func (i *Interpreter) VisitGetExpression(getExpression *GetExpression) {
+	object := i.evaluate(getExpression.Object)
+	if object, ok := object.(*LoxInstance); ok {
+		i.Value = object.Get(getExpression.Name)
+		return
+	}
+
+	panic(loxerror.RuntimeError{Message: "Only instances have properties"})
+}
+
+func (i *Interpreter) VisitSetExpression(setExpression *SetExpression) {
+	object := i.evaluate(setExpression.Object)
+
+	if object, ok := object.(*LoxInstance); ok {
+		value := i.evaluate(setExpression.Value)
+		object.Set(setExpression.Name, value)
+		i.Value = value
+
+		return
+	}
+	panic(loxerror.RuntimeError{Message: "Only instances have fields"})
 }
 
 func (i *Interpreter) executeBlock(statements []Statement, subEnvironment *Environment) {
