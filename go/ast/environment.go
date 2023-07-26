@@ -43,6 +43,19 @@ func (e *Environment) Get(name lexer.Token) LoxValue {
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
 }
 
+func (e *Environment) GetAt(distance int, name string) LoxValue {
+	return e.ancestor(distance).symbols[name]
+}
+
+func (e *Environment) ancestor(distance int) *Environment {
+	env := e
+	for i := 0; i < distance; i++ {
+		env = env.enclosing
+	}
+
+	return env
+}
+
 func (e *Environment) Assign(name lexer.Token, value LoxValue) {
 	if _, ok := e.symbols[name.Lexeme]; ok {
 		e.symbols[name.Lexeme] = value
@@ -55,4 +68,8 @@ func (e *Environment) Assign(name lexer.Token, value LoxValue) {
 	}
 
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
+}
+
+func (e *Environment) AssignAt(distance int, name lexer.Token, value LoxValue) {
+	e.ancestor(distance).symbols[name.Lexeme] = value
 }

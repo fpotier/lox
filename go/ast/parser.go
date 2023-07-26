@@ -180,6 +180,7 @@ func (p *Parser) statement() Statement {
 	}
 }
 
+// TODO: check where we create an additional block
 func (p *Parser) forStatement() Statement {
 	p.consume(lexer.LeftParenthesis, "Expect '(' after 'for'")
 	var initializer Statement
@@ -208,6 +209,7 @@ func (p *Parser) forStatement() Statement {
 	body := p.statement()
 
 	if increment != nil {
+		// Note: I think this creates a useless block
 		body = NewBlockStatement([]Statement{body, NewExpressionStatement(increment)})
 	}
 

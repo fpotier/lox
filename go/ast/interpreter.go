@@ -18,6 +18,7 @@ type Interpreter struct {
 	OutputStream    io.Writer
 	globals         *Environment
 	environment     *Environment
+	locals          map[Expression]int
 }
 
 func NewInterpreter() *Interpreter {
@@ -26,6 +27,7 @@ func NewInterpreter() *Interpreter {
 		HadRuntimeError: false,
 		OutputStream:    os.Stdout,
 		globals:         NewEnvironment(),
+		locals:          make(map[Expression]int),
 	}
 	i.environment = i.globals
 
@@ -198,12 +200,16 @@ func (i *Interpreter) VisitUnaryExpression(unaryExpression *UnaryExpression) {
 }
 
 func (i *Interpreter) VisitVariableExpression(variableExpression *VariableExpression) {
-	i.Value = i.environment.Get(variableExpression.Name)
+	i.Value = i.lookupVariable(variableExpression.Name, variableExpression)
 }
 
 func (i *Interpreter) VisitAssignmentExpression(assignmentExpression *AssignmentExpression) {
 	value := i.evaluate(assignmentExpression.Value)
-	i.environment.Assign(assignmentExpression.Name, value)
+	if distance, ok := i.locals[assignmentExpression]; ok {
+		i.environment.AssignAt(distance, assignmentExpression.Name, value)
+	} else {
+		i.globals.Assign(assignmentExpression.Name, value)
+	}
 	i.Value = value
 }
 
@@ -244,15 +250,26 @@ func (i *Interpreter) execute(statement Statement) {
 
 func (i *Interpreter) evaluate(expression Expression) LoxValue {
 	// TODO: handle error -> causes nil pointer dereference
-	newVisitor := &Interpreter{
-		Value:           nil,
-		HadRuntimeError: false,
-		OutputStream:    os.Stdout,
-		environment:     i.environment,
-	}
+	newVisitor := NewInterpreter()
+	newVisitor.environment = i.environment
+	newVisitor.globals = i.globals
+	newVisitor.locals = i.locals
+
 	expression.Accept(newVisitor)
 
 	return newVisitor.Value
+}
+
+func (i *Interpreter) resolve(e Expression, depth int) {
+	i.locals[e] = depth
+}
+
+func (i *Interpreter) lookupVariable(name lexer.Token, e Expression) LoxValue {
+	if distance, ok := i.locals[e]; ok {
+		return i.environment.GetAt(distance, name.Lexeme)
+	} else {
+		return i.globals.Get(name)
+	}
 }
 
 func assertNumberOperands(operator lexer.Token, lhs LoxValue, rhs LoxValue) {

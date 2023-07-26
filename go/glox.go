@@ -18,7 +18,7 @@ var interpreter = ast.NewInterpreter()
 func RunPrompt() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Print("> ")
+		fmt.Print("lox> ")
 		scanner.Scan()
 		if err := scanner.Err(); err != nil {
 			log.Fatal(err)
@@ -45,9 +45,15 @@ func RunFile(filepath string) {
 func run(sourceCode string) {
 	lexer := lexer.NewLexer(sourceCode)
 	tokens := lexer.Tokens()
+
 	parser := ast.NewParser(tokens)
 	statements := parser.Parse()
+	if loxerror.HadError {
+		return
+	}
 
+	resolver := ast.NewResolver(interpreter)
+	resolver.ResolveProgram(statements)
 	if loxerror.HadError {
 		return
 	}
