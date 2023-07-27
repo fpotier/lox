@@ -16,23 +16,22 @@ The test suite in `test/official_tests` comes from the [original implementation]
 | -------------------- | ------------------ |
 | assignment           | :x:                |
 | benchmark            | :x:                |
-| block                | :x:                |
-| bool                 | :x:                |
+| block                | :white_check_mark: |
+| bool                 | :white_check_mark: |
 | call                 | :x:                |
 | class                | :x:                |
 | closure              | :x:                |
-| comments             | :x:                |
+| comments             | :white_check_mark: |
 | constructor          | :x:                |
-| expressions          | :x:                |
 | field                | :x:                |
 | for                  | :x:                |
 | function             | :x:                |
 | if                   | :x:                |
 | inheritance          | :x:                |
 | limit                | :x:                |
-| logical operator     | :x:                |
+| logical operator     | :white_check_mark: |
 | method               | :x:                |
-| nil                  | :x:                |
+| nil                  | :white_check_mark: |
 | number               | :x:                |
 | operator             | :x:                |
 | print                | :x:                |

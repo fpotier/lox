@@ -46,7 +46,9 @@ func (f LoxFunction) Call(i *Interpreter, arguments []LoxValue) (returnValue Lox
 		environment.Define(f.Declaration.Parameters[i].Lexeme, arguments[i])
 	}
 
-	// TODO: should we wrap the LoxValue in Return...?
+	// If no return statement is executed 'nil' is returned
+	returnValue = NewNilValue()
+
 	defer func() {
 		if r := recover(); r != nil {
 			if rt, ok := r.(LoxValue); ok {
@@ -59,6 +61,6 @@ func (f LoxFunction) Call(i *Interpreter, arguments []LoxValue) (returnValue Lox
 
 	i.executeBlock(f.Declaration.Body, environment)
 
-	return
+	return returnValue
 }
 func (f LoxFunction) Arity() int { return len(f.Declaration.Parameters) }

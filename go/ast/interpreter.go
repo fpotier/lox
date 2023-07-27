@@ -22,7 +22,7 @@ type Interpreter struct {
 
 func NewInterpreter(outputStream io.Writer) *Interpreter {
 	i := Interpreter{
-		Value:           nil,
+		Value:           NewNilValue(),
 		HadRuntimeError: false,
 		OutputStream:    outputStream,
 		globals:         NewEnvironment(),
@@ -83,15 +83,11 @@ func (i *Interpreter) VisitExpressionStatement(expressionStatement *ExpressionSt
 
 func (i *Interpreter) VisitPrintStatement(printStatement *PrintStatement) {
 	value := i.evaluate(printStatement.Expression)
-	if value == nil {
-		fmt.Fprint(i.OutputStream, "<nil>\n")
-	} else {
-		fmt.Fprintf(i.OutputStream, "%s\n", value.String())
-	}
+	fmt.Fprintf(i.OutputStream, "%s\n", value.String())
 }
 
 func (i *Interpreter) VisitVariableStatement(variableStatement *VariableStatement) {
-	var value LoxValue
+	var value LoxValue = NewNilValue()
 	if variableStatement.Initializer != nil {
 		value = i.evaluate(variableStatement.Initializer)
 	}
@@ -104,7 +100,7 @@ func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
 }
 
 func (i *Interpreter) VisitClassStatement(classStatement *ClassStatement) {
-	i.environment.Define(classStatement.Name.Lexeme, nil)
+	i.environment.Define(classStatement.Name.Lexeme, NewNilValue())
 	class := NewLoxClass(classStatement.Name.Lexeme)
 	i.environment.Assign(classStatement.Name, class)
 }

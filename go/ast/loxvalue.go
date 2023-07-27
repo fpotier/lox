@@ -65,5 +65,5 @@ func (n NilValue) IsBoolean() bool        { return false }
 func (n NilValue) IsNumber() bool         { return false }
 func (n NilValue) IsString() bool         { return false }
 func (n NilValue) IsTruthy() bool         { return false }
-func (n NilValue) String() string         { return "<Nil>" }
+func (n NilValue) String() string         { return "nil" }
 func (n NilValue) Equals(_ LoxValue) bool { return false }
