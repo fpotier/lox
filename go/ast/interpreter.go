@@ -3,7 +3,6 @@ package ast
 import (
 	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"time"
 
@@ -21,12 +20,13 @@ type Interpreter struct {
 	locals          map[Expression]int
 }
 
-func NewInterpreter() *Interpreter {
+func NewInterpreter(outputStream io.Writer) *Interpreter {
 	i := Interpreter{
 		Value:           nil,
 		HadRuntimeError: false,
-		OutputStream:    os.Stdout,
+		OutputStream:    outputStream,
 		globals:         NewEnvironment(),
+		environment:     nil,
 		locals:          make(map[Expression]int),
 	}
 	i.environment = i.globals
@@ -279,7 +279,7 @@ func (i *Interpreter) execute(statement Statement) {
 
 func (i *Interpreter) evaluate(expression Expression) LoxValue {
 	// TODO: handle error -> causes nil pointer dereference
-	newVisitor := NewInterpreter()
+	newVisitor := NewInterpreter(i.OutputStream)
 	newVisitor.environment = i.environment
 	newVisitor.globals = i.globals
 	newVisitor.locals = i.locals
@@ -296,9 +296,9 @@ func (i *Interpreter) resolve(e Expression, depth int) {
 func (i *Interpreter) lookupVariable(name lexer.Token, e Expression) LoxValue {
 	if distance, ok := i.locals[e]; ok {
 		return i.environment.GetAt(distance, name.Lexeme)
-	} else {
-		return i.globals.Get(name)
 	}
+
+	return i.globals.Get(name)
 }
 
 func assertNumberOperands(operator lexer.Token, lhs LoxValue, rhs LoxValue) {

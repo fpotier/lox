@@ -2,6 +2,8 @@ package ast
 
 import "fmt"
 
+const maxArgs = 255
+
 type LoxCallable interface {
 	Call(*Interpreter, []LoxValue) LoxValue
 	Arity() int

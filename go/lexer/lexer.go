@@ -8,20 +8,22 @@ import (
 )
 
 type Lexer struct {
-	sourceCode string
-	tokens     []Token
-	start      int
-	current    int
-	line       int
+	errorReporter loxerror.ErrorReporter
+	sourceCode    string
+	tokens        []Token
+	start         int
+	current       int
+	line          int
 }
 
-func NewLexer(sourceCode string) *Lexer {
+func NewLexer(errorReporter loxerror.ErrorReporter, sourceCode string) *Lexer {
 	return &Lexer{
-		sourceCode: sourceCode,
-		tokens:     make([]Token, 0),
-		start:      0,
-		current:    0,
-		line:       1,
+		errorReporter: errorReporter,
+		sourceCode:    sourceCode,
+		tokens:        make([]Token, 0),
+		start:         0,
+		current:       0,
+		line:          1,
 	}
 }
 
@@ -113,7 +115,7 @@ func (l *Lexer) scanToken() {
 		case isAlpha(c):
 			l.identifier()
 		default:
-			loxerror.Error(l.line, fmt.Sprintf("Unexpected character '%c'", c))
+			l.errorReporter.Error(l.line, fmt.Sprintf("Unexpected character '%c'", c))
 		}
 	}
 }
@@ -178,7 +180,7 @@ func (l *Lexer) string() {
 	}
 
 	if l.isAtEnd() {
-		loxerror.Error(l.line, "Unterminated string")
+		l.errorReporter.Error(l.line, "Unterminated string")
 		return
 	}
 
@@ -204,7 +206,7 @@ func (l *Lexer) number() {
 
 	floatValue, err := strconv.ParseFloat(l.sourceCode[l.start:l.current], 64)
 	if err != nil {
-		loxerror.Error(l.line,
+		l.errorReporter.Error(l.line,
 			fmt.Sprintf("Error converting %v to float: %v", l.sourceCode[l.start:l.current], err))
 		return
 	}

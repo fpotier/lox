@@ -58,17 +58,12 @@ func (n NumberValue) Equals(v LoxValue) bool {
 	return false
 }
 
-type ObjectValue struct{ Value *map[string]LoxValue }
+type NilValue struct{}
 
-func (o ObjectValue) IsBoolean() bool { return false }
-func (o ObjectValue) IsNumber() bool  { return false }
-func (o ObjectValue) IsString() bool  { return false }
-func (o ObjectValue) IsTruthy() bool  { return o.Value != nil }
-func (o ObjectValue) String() string {
-	// TODO: string representation of objects
-	return "TODO"
-}
-func (o ObjectValue) Equals(_ LoxValue) bool {
-	// TODO implement
-	return false
-}
+func NewNilValue() *NilValue              { return &NilValue{} }
+func (n NilValue) IsBoolean() bool        { return false }
+func (n NilValue) IsNumber() bool         { return false }
+func (n NilValue) IsString() bool         { return false }
+func (n NilValue) IsTruthy() bool         { return false }
+func (n NilValue) String() string         { return "<Nil>" }
+func (n NilValue) Equals(_ LoxValue) bool { return false }

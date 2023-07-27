@@ -15,13 +15,15 @@ const (
 )
 
 type Resolver struct {
+	errorReporter   loxerror.ErrorReporter
 	interpreter     *Interpreter
 	scopes          []map[string]bool
 	currentFonction FunctionType
 }
 
-func NewResolver(i *Interpreter) *Resolver {
+func NewResolver(errorReporter loxerror.ErrorReporter, i *Interpreter) *Resolver {
 	r := Resolver{
+		errorReporter:   errorReporter,
 		interpreter:     i,
 		scopes:          make([]map[string]bool, 0),
 		currentFonction: None,
@@ -48,7 +50,7 @@ func (r *Resolver) VisitSetExpression(e *SetExpression) {
 func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
 	if len(r.scopes) > 0 {
 		if declared, ok := r.scopes[len(r.scopes)-1][e.Name.Lexeme]; ok && !declared {
-			loxerror.Error(e.Name.Line, "Can't read local variable in its own initializer")
+			r.errorReporter.Error(e.Name.Line, "Can't read local variable in its own initializer")
 		}
 	}
 
@@ -106,7 +108,7 @@ func (r *Resolver) VisitWhileStatement(s *WhileStatement) {
 
 func (r *Resolver) VisitReturnStatement(s *ReturnStatement) {
 	if r.currentFonction == None {
-		loxerror.Error(s.Keyword.Line, "Can't return from top-level code")
+		r.errorReporter.Error(s.Keyword.Line, "Can't return from top-level code")
 	}
 
 	if s.Value != nil {
@@ -182,7 +184,7 @@ func (r *Resolver) endScope()   { r.scopes = r.scopes[:len(r.scopes)-1] }
 func (r *Resolver) declare(name lexer.Token) {
 	if len(r.scopes) > 0 {
 		if _, ok := r.scopes[len(r.scopes)-1][name.Lexeme]; ok {
-			loxerror.Error(name.Line, fmt.Sprintf("Variable '%s' already declared in this scope", name.Lexeme))
+			r.errorReporter.Error(name.Line, fmt.Sprintf("Variable '%s' already declared in this scope", name.Lexeme))
 		}
 		r.scopes[len(r.scopes)-1][name.Lexeme] = false
 	}

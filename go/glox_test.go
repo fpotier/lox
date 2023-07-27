@@ -14,7 +14,9 @@ import (
 const TestDirectory = "../test/"
 
 func TestRunFile(t *testing.T) {
-	filepath.WalkDir(TestDirectory, func(path string, d fs.DirEntry, err error) error {
+	t.Parallel()
+
+	err := filepath.WalkDir(TestDirectory, func(path string, d fs.DirEntry, err error) error {
 		t.Run(path, func(t *testing.T) {
 			if filepath.Ext(path) != ".lox" {
 				return
@@ -28,8 +30,8 @@ func TestRunFile(t *testing.T) {
 			}
 
 			builder := strings.Builder{}
-			interpreter.OutputStream = &builder
-			RunFile(path)
+			lox := NewLox(&builder)
+			lox.RunFile(path)
 			programOutput := builder.String()
 
 			expectedBytes, err := os.ReadFile(expectedPath)
@@ -38,7 +40,7 @@ func TestRunFile(t *testing.T) {
 			}
 			expectedOutput := string(expectedBytes)
 
-			if string(expectedOutput) != programOutput {
+			if expectedOutput != programOutput {
 				err := diff.Text(filepath.Base(path), filepath.Base(expectedPath), programOutput, expectedOutput, os.Stdout)
 				if err != nil {
 					fmt.Println(err)
@@ -49,4 +51,8 @@ func TestRunFile(t *testing.T) {
 
 		return nil
 	})
+
+	if err != nil {
+		t.Fail()
+	}
 }

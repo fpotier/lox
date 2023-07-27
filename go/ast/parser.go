@@ -79,8 +79,9 @@ import (
 //            | IDENTIFIER
 
 type Parser struct {
-	tokens  []lexer.Token
-	current int
+	errorReporter loxerror.ErrorReporter
+	tokens        []lexer.Token
+	current       int
 }
 
 func (p *Parser) Parse() []Statement {
@@ -140,8 +141,8 @@ func (p *Parser) function(kind string) Statement {
 	parameters := make([]lexer.Token, 0)
 	if !p.check(lexer.RightParenthesis) {
 		for next := true; next; next = p.match(lexer.Comma) {
-			if len(parameters) >= 255 {
-				loxerror.Error(p.peek().Line, "Can't have more than 255 parameters")
+			if len(parameters) >= maxArgs {
+				p.errorReporter.Error(p.peek().Line, "Can't have more than 255 parameters")
 			}
 
 			parameters = append(parameters, p.consume(lexer.Identifier, "Expect parameter name"))
@@ -314,7 +315,7 @@ func (p *Parser) assignment() Expression {
 
 		// No need to go to put the parser in recovery mode
 		// TODO: better error message
-		loxerror.Error(equalsToken.Line, "Invalid assignment target")
+		p.errorReporter.Error(equalsToken.Line, "Invalid assignment target")
 
 		return nil
 	}
@@ -432,7 +433,7 @@ func (p *Parser) finishCall(callee Expression) Expression {
 	if !p.check(lexer.RightParenthesis) {
 		for next := true; next; next = p.match(lexer.Comma) {
 			if len(args) >= MaxArgs {
-				loxerror.Error(p.peek().Line, "Can't have more than 255 arguments")
+				p.errorReporter.Error(p.peek().Line, "Can't have more than 255 arguments")
 			}
 			args = append(args, p.expression())
 		}
@@ -451,7 +452,7 @@ func (p *Parser) primary() Expression {
 	case p.match(lexer.True):
 		return NewLiteralExpression(NewBooleanValue(true))
 	case p.match(lexer.Nil):
-		return NewLiteralExpression(&ObjectValue{Value: nil})
+		return NewLiteralExpression(NewNilValue())
 	}
 
 	// TODO: is there a better solution?
@@ -472,14 +473,15 @@ func (p *Parser) primary() Expression {
 		return NewGroupingExpression(expr)
 	}
 
-	loxerror.Error(p.peek().Line, "expect expression")
+	p.errorReporter.Error(p.peek().Line, "expect expression")
 	panic(loxerror.ParserError{Message: "expect expression"})
 }
 
-func NewParser(tokens []lexer.Token) *Parser {
+func NewParser(errorReporter loxerror.ErrorReporter, tokens []lexer.Token) *Parser {
 	return &Parser{
-		tokens:  tokens,
-		current: 0,
+		errorReporter: errorReporter,
+		tokens:        tokens,
+		current:       0,
 	}
 }
 
@@ -527,7 +529,7 @@ func (p *Parser) consume(tokenType lexer.TokenType, message string) lexer.Token 
 		return p.advance()
 	}
 
-	loxerror.Error(p.peek().Line, message)
+	p.errorReporter.Error(p.peek().Line, message)
 	panic(loxerror.ParserError{Message: message})
 }
 
