@@ -58,10 +58,16 @@ func (n NumberValue) Equals(v LoxValue) bool {
 
 type NilValue struct{}
 
-func NewNilValue() *NilValue              { return &NilValue{} }
-func (n NilValue) IsBoolean() bool        { return false }
-func (n NilValue) IsNumber() bool         { return false }
-func (n NilValue) IsString() bool         { return false }
-func (n NilValue) IsTruthy() bool         { return false }
-func (n NilValue) String() string         { return "nil" }
-func (n NilValue) Equals(_ LoxValue) bool { return false }
+func NewNilValue() *NilValue       { return &NilValue{} }
+func (n NilValue) IsBoolean() bool { return false }
+func (n NilValue) IsNumber() bool  { return false }
+func (n NilValue) IsString() bool  { return false }
+func (n NilValue) IsTruthy() bool  { return false }
+func (n NilValue) String() string  { return "nil" }
+func (n NilValue) Equals(v LoxValue) bool {
+	if _, ok := v.(*NilValue); ok {
+		return true
+	}
+
+	return false
+}

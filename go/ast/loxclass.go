@@ -14,9 +14,9 @@ func NewLoxClass(name string) *LoxClass { return &LoxClass{name: name} }
 func (c *LoxClass) IsBoolean() bool        { return false }
 func (c *LoxClass) IsNumber() bool         { return false }
 func (c *LoxClass) IsString() bool         { return false }
-func (c *LoxClass) IsTruthy() bool         { return false }
+func (c *LoxClass) IsTruthy() bool         { return true }
 func (c *LoxClass) String() string         { return c.name }
-func (c *LoxClass) Equals(_ LoxValue) bool { return false }
+func (c *LoxClass) Equals(v LoxValue) bool { return c == v }
 
 func (c *LoxClass) Call(i *Interpreter, arguments []LoxValue) LoxValue {
 	return NewLoxInstance(*c)
@@ -51,6 +51,6 @@ func (i *LoxInstance) Set(name lexer.Token, value LoxValue) {
 func (i *LoxInstance) IsBoolean() bool        { return false }
 func (i *LoxInstance) IsNumber() bool         { return false }
 func (i *LoxInstance) IsString() bool         { return false }
-func (i *LoxInstance) IsTruthy() bool         { return false }
+func (i *LoxInstance) IsTruthy() bool         { return true }
 func (i *LoxInstance) String() string         { return i.class.name + " instance" }
 func (i *LoxInstance) Equals(_ LoxValue) bool { return false }

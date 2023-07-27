@@ -18,7 +18,7 @@ type NativeFunction struct {
 func (f NativeFunction) IsBoolean() bool        { return false }
 func (f NativeFunction) IsNumber() bool         { return false }
 func (f NativeFunction) IsString() bool         { return false }
-func (f NativeFunction) IsTruthy() bool         { return false }
+func (f NativeFunction) IsTruthy() bool         { return true }
 func (f NativeFunction) String() string         { return fmt.Sprintf("<native function> %s", f.name) }
 func (f NativeFunction) Equals(_ LoxValue) bool { return false }
 func (f NativeFunction) Call(i *Interpreter, arguments []LoxValue) LoxValue {
@@ -37,7 +37,7 @@ func NewLoxFunction(declaration *FunctionStatement, closure *Environment) *LoxFu
 func (f LoxFunction) IsBoolean() bool        { return false }
 func (f LoxFunction) IsNumber() bool         { return false }
 func (f LoxFunction) IsString() bool         { return false }
-func (f LoxFunction) IsTruthy() bool         { return false }
+func (f LoxFunction) IsTruthy() bool         { return true }
 func (f LoxFunction) String() string         { return fmt.Sprintf("<function> %s", f.Declaration.Name.Lexeme) }
 func (f LoxFunction) Equals(_ LoxValue) bool { return false }
 func (f LoxFunction) Call(i *Interpreter, arguments []LoxValue) (returnValue LoxValue) {
