@@ -237,10 +237,9 @@ func (p *Parser) forStatement() Statement {
 		condition = NewLiteralExpression(NewBooleanValue(true))
 	}
 
-	newBody := NewWhileStatement(condition, body)
-	var forLoop Statement
+	var forLoop Statement = NewWhileStatement(condition, body)
 	if initializer != nil {
-		forLoop = NewBlockStatement([]Statement{initializer, newBody})
+		forLoop = NewBlockStatement([]Statement{initializer, forLoop})
 	}
 
 	return forLoop
