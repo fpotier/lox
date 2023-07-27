@@ -1,8 +1,6 @@
 package ast
 
-import (
-	"github.com/fpotier/crafting-interpreters/go/lexer"
-)
+import "github.com/fpotier/lox/go/lexer"
 
 type Statement interface {
 	Accept(visitor Visitor)

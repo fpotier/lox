@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"github.com/fpotier/crafting-interpreters/go/lexer"
-	"github.com/fpotier/crafting-interpreters/go/loxerror"
+	"github.com/fpotier/lox/go/lexer"
+	"github.com/fpotier/lox/go/loxerror"
 )
 
 type LoxClass struct {

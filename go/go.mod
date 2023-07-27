@@ -1,4 +1,4 @@
-module github.com/fpotier/crafting-interpreters/go
+module github.com/fpotier/lox/go
 
 go 1.18
 

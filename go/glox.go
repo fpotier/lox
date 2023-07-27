@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/fpotier/crafting-interpreters/go/ast"
-	"github.com/fpotier/crafting-interpreters/go/lexer"
+	"github.com/fpotier/lox/go/ast"
+	"github.com/fpotier/lox/go/lexer"
 	"github.com/sean-/sysexits"
 )
 

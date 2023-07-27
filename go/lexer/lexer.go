@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fpotier/crafting-interpreters/go/loxerror"
+	"github.com/fpotier/lox/go/loxerror"
 )
 
 type Lexer struct {

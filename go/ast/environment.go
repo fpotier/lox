@@ -3,8 +3,8 @@ package ast
 import (
 	"fmt"
 
-	"github.com/fpotier/crafting-interpreters/go/lexer"
-	"github.com/fpotier/crafting-interpreters/go/loxerror"
+	"github.com/fpotier/lox/go/lexer"
+	"github.com/fpotier/lox/go/loxerror"
 )
 
 type Environment struct {

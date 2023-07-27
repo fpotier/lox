@@ -1,8 +1,6 @@
 package ast
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type LoxValue interface {
 	IsBoolean() bool
