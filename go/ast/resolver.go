@@ -11,7 +11,7 @@ type FunctionType uint8
 
 const (
 	None FunctionType = iota
-	Function
+	Func
 )
 
 type Resolver struct {
@@ -82,7 +82,7 @@ func (r *Resolver) VisitFunctionStatement(s *FunctionStatement) {
 	r.declare(s.Name)
 	r.define(s.Name)
 
-	r.resolveFunction(*s, Function)
+	r.resolveFunction(*s, Func)
 }
 
 func (r *Resolver) VisitExpressionStatement(s *ExpressionStatement) {

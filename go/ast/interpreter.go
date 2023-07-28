@@ -126,9 +126,9 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *BinaryExpression) 
 	switch binaryExpression.Operator.Type {
 	case lexer.Plus:
 		switch {
-		case lhs.IsNumber() && rhs.IsNumber():
+		case lhs.Kind() == Number && rhs.Kind() == Number:
 			i.Value = NewNumberValue(lhs.(*NumberValue).Value + rhs.(*NumberValue).Value)
-		case lhs.IsString() && rhs.IsString():
+		case lhs.Kind() == String && rhs.Kind() == String:
 			i.Value = NewStringValue(lhs.(*StringValue).Value + rhs.(*StringValue).Value)
 		default:
 			// TODO: print lox types instead of go types
@@ -296,7 +296,7 @@ func (i *Interpreter) lookupVariable(name lexer.Token, e Expression) LoxValue {
 }
 
 func assertNumberOperands(operator lexer.Token, lhs LoxValue, rhs LoxValue) {
-	if !lhs.IsNumber() || !rhs.IsNumber() {
+	if !(lhs.Kind() == Number) || !(rhs.Kind() == Number) {
 		panic(loxerror.RuntimeError{
 			// TODO: print lox types instead of go types
 			Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v",
@@ -308,7 +308,7 @@ func assertNumberOperands(operator lexer.Token, lhs LoxValue, rhs LoxValue) {
 }
 
 func assertNumberOperand(operator lexer.Token, rhs LoxValue) {
-	if !rhs.IsNumber() {
+	if !(rhs.Kind() == Number) {
 		panic(loxerror.RuntimeError{
 			// TODO: print lox types instead of go types
 			Message: fmt.Sprintf("Operator '%v': incompatible type %v", operator.Lexeme, reflect.TypeOf(rhs)),
