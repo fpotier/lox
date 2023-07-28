@@ -261,6 +261,7 @@ func (i *Interpreter) VisitSetExpression(setExpression *SetExpression) {
 func (i *Interpreter) executeBlock(statements []Statement, subEnvironment *Environment) {
 	previousEnv := i.environment
 	i.environment = subEnvironment
+	defer func() { i.environment = previousEnv }()
 	// TODO error handling
 	for _, statement := range statements {
 		i.execute(statement)
@@ -274,15 +275,12 @@ func (i *Interpreter) execute(statement Statement) {
 }
 
 func (i *Interpreter) evaluate(expression Expression) LoxValue {
-	// TODO: handle error -> causes nil pointer dereference
-	newVisitor := NewInterpreter(i.OutputStream)
-	newVisitor.environment = i.environment
-	newVisitor.globals = i.globals
-	newVisitor.locals = i.locals
+	oldValue := i.Value
+	expression.Accept(i)
+	evalValue := i.Value
+	i.Value = oldValue
 
-	expression.Accept(newVisitor)
-
-	return newVisitor.Value
+	return evalValue
 }
 
 func (i *Interpreter) resolve(e Expression, depth int) {
