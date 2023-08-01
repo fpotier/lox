@@ -177,3 +177,16 @@ func NewThisExpression(keyword lexer.Token) *ThisExpression { return &ThisExpres
 func (e *ThisExpression) Accept(visitor Visitor) {
 	visitor.VisitThisExpression(e)
 }
+
+type SuperExpression struct {
+	Keyword lexer.Token
+	Method  lexer.Token
+}
+
+func NewSuperExpression(keyword lexer.Token, method lexer.Token) *SuperExpression {
+	return &SuperExpression{Keyword: keyword, Method: method}
+}
+
+func (e *SuperExpression) Accept(visitor Visitor) {
+	visitor.VisitSuperExpression(e)
+}

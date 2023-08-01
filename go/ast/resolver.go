@@ -21,6 +21,7 @@ type ClassType uint8
 const (
 	NoClass ClassType = iota
 	InClass
+	InSubClass
 )
 
 type Resolver struct {
@@ -58,6 +59,16 @@ func (r *Resolver) VisitSetExpression(e *SetExpression) {
 	r.resolveExpression(e.Object)
 }
 
+func (r *Resolver) VisitSuperExpression(e *SuperExpression) {
+	if r.currentClassType == NoClass {
+		r.errorReporter.Error(e.Keyword.Line, "Can't use 'super' outside of a class")
+	} else if r.currentClassType != InSubClass {
+		r.errorReporter.Error(e.Keyword.Line, "Can't use 'super' in a class with no superclass")
+	}
+
+	r.resolveLocal(e, e.Keyword)
+}
+
 func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
 	if len(r.scopes) > 0 {
 		if declared, ok := r.scopes[len(r.scopes)-1][e.Name.Lexeme]; ok && !declared {
@@ -75,6 +86,17 @@ func (r *Resolver) VisitClassStatement(s *ClassStatement) {
 	r.declare(s.Name)
 	r.define(s.Name)
 
+	if s.Superclass != nil {
+		r.currentClassType = InSubClass
+		if s.Name.Lexeme == s.Superclass.Name.Lexeme {
+			r.errorReporter.Error(s.Superclass.Name.Line, "A class can't inherit from itself")
+		}
+		r.resolveExpression(s.Superclass)
+
+		r.beginScope()
+		r.scopes[len(r.scopes)-1]["super"] = true
+	}
+
 	r.beginScope()
 	r.scopes[len(r.scopes)-1]["this"] = true
 	for _, method := range s.Methods {
@@ -85,6 +107,10 @@ func (r *Resolver) VisitClassStatement(s *ClassStatement) {
 		r.resolveFunction(*method, fnType)
 	}
 	r.endScope()
+
+	if s.Superclass != nil {
+		r.endScope()
+	}
 
 	r.currentClassType = enclosingClass
 }

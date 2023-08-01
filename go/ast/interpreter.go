@@ -103,14 +103,34 @@ func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
 }
 
 func (i *Interpreter) VisitClassStatement(classStatement *ClassStatement) {
+	var superclass *LoxClass
+	if classStatement.Superclass != nil {
+		result := i.evaluate(classStatement.Superclass)
+		var ok bool
+		superclass, ok = result.(*LoxClass)
+		if !ok {
+			panic(loxerror.RuntimeError{Message: "Superclass must be a class"})
+		}
+	}
+
 	i.environment.Define(classStatement.Name.Lexeme, NewNilValue())
+
+	if classStatement.Superclass != nil {
+		i.environment = NewSubEnvironment(i.environment)
+		i.environment.Define("super", superclass)
+	}
 
 	methods := make(map[string]*LoxFunction)
 	for _, method := range classStatement.Methods {
 		methods[method.Name.Lexeme] = NewLoxFunction(method, i.environment, method.Name.Lexeme == "init")
 	}
 
-	class := NewLoxClass(classStatement.Name.Lexeme, methods)
+	class := NewLoxClass(classStatement.Name.Lexeme, superclass, methods)
+
+	if superclass != nil {
+		i.environment = i.environment.enclosing
+	}
+
 	i.environment.Assign(classStatement.Name, class)
 }
 
@@ -130,6 +150,18 @@ func (i *Interpreter) VisitReturnStatement(returnStatement *ReturnStatement) {
 
 func (i *Interpreter) VisitThisExpression(thisExpression *ThisExpression) {
 	i.Value = i.lookupVariable(thisExpression.Keyword, thisExpression)
+}
+
+func (i *Interpreter) VisitSuperExpression(superExpression *SuperExpression) {
+	distance := i.locals[superExpression]
+	superclass := i.environment.GetAt(distance, "super").(*LoxClass)
+	this := i.environment.GetAt(distance-1, "this").(*LoxInstance)
+	method, ok := superclass.findMethod(superExpression.Method.Lexeme)
+	if !ok {
+		panic(loxerror.RuntimeError{Message: "Undefined property" + superExpression.Method.Lexeme})
+	}
+
+	i.Value = method.Bind(this)
 }
 
 func (i *Interpreter) VisitBinaryExpression(binaryExpression *BinaryExpression) {

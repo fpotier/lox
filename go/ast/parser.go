@@ -9,7 +9,7 @@ import (
 
 // Grammar rules of the Lox language
 //
-// program -> statement* EOF
+// program -> declaration* EOF
 //
 // declaration -> varDeclaration
 //                | funDeclaration
@@ -20,11 +20,7 @@ import (
 //
 // funDeclaration -> "fun" function
 //
-// classDeclaration -> "class" IDENTIFIER "{" function* "}"
-//
-// function -> IDENTIFIER "(" parameters? ")" block
-//
-// block -> "{" declaration* "}"
+// classDeclaration -> "class" IDENTIFIER ( "<"  IDENTIFIER )? "{" function* "}"
 //
 // statement -> expressionStatement
 //              | forStatement
@@ -33,6 +29,8 @@ import (
 //              | returnStatement
 //              | whileStatement
 //              | block
+//
+// expressionStatement -> expression ";"
 //
 // forStatement -> "for" "(" (varDecl | expression Statement | ";") expression? ";" expression? ")" statement
 //
@@ -44,7 +42,7 @@ import (
 //
 // whileStatment -> "while" "(" expression ")" statement
 //
-// expressionStatement -> expression ";"
+// block -> "{" declaration* "}"
 //
 // expression -> assignment
 //
@@ -68,8 +66,6 @@ import (
 //
 // call -> primary ( "(" arguments? ")" | "." IDENTIFIER )*
 //
-// arguments -> expression ( "," expression )*
-//
 // primary -> NUMBER
 //            | STRING
 //            | "true"
@@ -77,6 +73,11 @@ import (
 //            | "nil"
 //            | "(" expression ")"
 //            | IDENTIFIER
+//            | "super" "." IDENTIFIER
+//
+// arguments -> expression ( "," expression )*
+//
+// function -> IDENTIFIER "(" parameters? ")" block
 
 type Parser struct {
 	errorReporter loxerror.ErrorReporter
@@ -158,6 +159,13 @@ func (p *Parser) function(kind string) Statement {
 
 func (p *Parser) classDeclaration() Statement {
 	name := p.consume(lexer.Identifier, "Expect class name")
+
+	var superclass *VariableExpression
+	if p.match(lexer.Less) {
+		p.consume(lexer.Identifier, "Expect superclass name")
+		superclass = NewVariableExpression(p.previous())
+	}
+
 	p.consume(lexer.LeftBrace, "Expect '{' before class body")
 
 	methods := make([]*FunctionStatement, 0)
@@ -167,7 +175,7 @@ func (p *Parser) classDeclaration() Statement {
 
 	p.consume(lexer.RightBrace, "Expect '}' after class body")
 
-	return NewClassStatement(name, methods)
+	return NewClassStatement(name, superclass, methods)
 }
 
 func (p *Parser) block() []Statement {
@@ -454,6 +462,11 @@ func (p *Parser) primary() Expression {
 		return NewLiteralExpression(NewNilValue())
 	case p.match(lexer.This):
 		return NewThisExpression(p.previous())
+	case p.match(lexer.Super):
+		keyword := p.previous()
+		p.consume(lexer.Dot, "Expect '.' after 'super'")
+		method := p.consume(lexer.Identifier, "Expect superclass method name")
+		return NewSuperExpression(keyword, method)
 	}
 
 	// TODO: is there a better solution?
