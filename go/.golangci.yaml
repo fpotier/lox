@@ -7,39 +7,21 @@ output:
 linters:
   enable-all: true
   disable:
-    # Deprecated
-    - varcheck
-    - deadcode
-    - maligned
-    - nosnakecase
-    - exhaustivestruct
-    - golint
-    - interfacer
-    - scopelint
-    - structcheck
-    # Comments
+    - cyclop
+    - exhaustive # Buggy
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
     - godot
     - godox
-    # Style
-    - wsl
     - gofumpt
-    - gofmt
-    # Other
-    - gci
-    - nlreturn
-    - depguard
-    - goimports
-    - funlen
-    - forcetypeassert
-    - ireturn
-    - gochecknoglobals
-    - cyclop
-    - varnamelen
-    - forbidigo
     - interfacebloat
-    # Might enable later
-    - goerr113
-    - exhaustive
+    - ireturn
+    - nlreturn
+    - nonamedreturns
+    - varnamelen
+    - wsl
 linter-settings:
   nlreturn:
     blocksize: 2

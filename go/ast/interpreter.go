@@ -14,16 +14,18 @@ type Interpreter struct {
 	// Value can be virtually anything (string, number, boolean, object, nil, etc.)
 	Value           LoxValue
 	HadRuntimeError bool
+	ErrorReporter   loxerror.ErrorReporter
 	OutputStream    io.Writer
 	globals         *Environment
 	environment     *Environment
 	locals          map[Expression]int
 }
 
-func NewInterpreter(outputStream io.Writer) *Interpreter {
+func NewInterpreter(outputStream io.Writer, errorReporter loxerror.ErrorReporter) *Interpreter {
 	i := Interpreter{
 		Value:           NewNilValue(),
 		HadRuntimeError: false,
+		ErrorReporter:   errorReporter,
 		OutputStream:    outputStream,
 		globals:         NewEnvironment(),
 		environment:     nil,
@@ -35,7 +37,7 @@ func NewInterpreter(outputStream io.Writer) *Interpreter {
 		name:  "clock",
 		arity: 0,
 		code: func(*Interpreter, []LoxValue) LoxValue {
-			return NewNumberValue(float64(time.Now().UnixMilli()) / 1000.0)
+			return NewNumberValue(float64(time.Now().Unix()))
 		},
 	}
 
@@ -51,7 +53,8 @@ func (i *Interpreter) Eval(statements []Statement) {
 		if r := recover(); r != nil {
 			if err, ok := r.(loxerror.RuntimeError); ok {
 				i.HadRuntimeError = true
-				fmt.Println(err)
+				// TODO: better runtime error messages
+				i.ErrorReporter.Error(0, err.Message)
 				return
 			}
 			panic(r)

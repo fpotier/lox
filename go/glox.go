@@ -19,9 +19,10 @@ type Lox struct {
 	resolver    *ast.Resolver
 	interpreter *ast.Interpreter
 	stdout      io.Writer
+	stderr      io.Writer
 }
 
-func NewLox(stdout io.Writer) *Lox {
+func NewLox(fds ...io.Writer) *Lox {
 	lox := Lox{
 		hadError:    false,
 		lexer:       nil,
@@ -29,8 +30,17 @@ func NewLox(stdout io.Writer) *Lox {
 		resolver:    nil,
 		interpreter: nil,
 		stdout:      os.Stdout,
+		stderr:      os.Stderr,
 	}
-	lox.interpreter = ast.NewInterpreter(stdout)
+	for i, fd := range fds {
+		switch i {
+		case 0:
+			lox.stdout = fd
+		case 1:
+			lox.stderr = fd
+		}
+	}
+	lox.interpreter = ast.NewInterpreter(lox.stdout, &lox)
 
 	return &lox
 }
@@ -51,15 +61,18 @@ func (l *Lox) RunPrompt() {
 	}
 }
 
-func (l *Lox) RunFile(filepath string) {
+func (l *Lox) RunFile(filepath string) int {
 	sourceCode, err := os.ReadFile(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	l.run(string(sourceCode))
+
 	if l.hadError {
-		os.Exit(sysexits.DataErr)
+		return sysexits.DataErr
 	}
+
+	return 0
 }
 
 func (l *Lox) run(sourceCode string) {
@@ -83,7 +96,7 @@ func (l *Lox) run(sourceCode string) {
 }
 
 func (l *Lox) Error(line int, message string) {
-	fmt.Fprintf(os.Stderr, "[line %d] Error: %s\n", line, message)
+	fmt.Fprintf(l.stderr, "[line %d] Error: %s\n", line, message)
 	l.hadError = true
 }
 
@@ -96,7 +109,7 @@ func main() {
 		fmt.Println("Usage: glox [script]")
 		os.Exit(sysexits.Usage)
 	case nbArgs == maxArgs:
-		lox.RunFile(os.Args[1])
+		os.Exit(lox.RunFile(os.Args[1]))
 	default:
 		lox.RunPrompt()
 	}
