@@ -10,23 +10,34 @@ import (
 type FunctionType uint8
 
 const (
-	None FunctionType = iota
+	NoFunc FunctionType = iota
 	Func
+	Method
+	Constructor
+)
+
+type ClassType uint8
+
+const (
+	NoClass ClassType = iota
+	InClass
 )
 
 type Resolver struct {
-	errorReporter   loxerror.ErrorReporter
-	interpreter     *Interpreter
-	scopes          []map[string]bool
-	currentFonction FunctionType
+	errorReporter    loxerror.ErrorReporter
+	interpreter      *Interpreter
+	scopes           []map[string]bool
+	currentFnType    FunctionType
+	currentClassType ClassType
 }
 
 func NewResolver(errorReporter loxerror.ErrorReporter, i *Interpreter) *Resolver {
 	r := Resolver{
-		errorReporter:   errorReporter,
-		interpreter:     i,
-		scopes:          make([]map[string]bool, 0),
-		currentFonction: None,
+		errorReporter:    errorReporter,
+		interpreter:      i,
+		scopes:           make([]map[string]bool, 0),
+		currentFnType:    NoFunc,
+		currentClassType: NoClass,
 	}
 
 	return &r
@@ -58,8 +69,24 @@ func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
 }
 
 func (r *Resolver) VisitClassStatement(s *ClassStatement) {
+	enclosingClass := r.currentClassType
+	r.currentClassType = InClass
+
 	r.declare(s.Name)
 	r.define(s.Name)
+
+	r.beginScope()
+	r.scopes[len(r.scopes)-1]["this"] = true
+	for _, method := range s.Methods {
+		fnType := Method
+		if method.Name.Lexeme == "init" {
+			fnType = Constructor
+		}
+		r.resolveFunction(*method, fnType)
+	}
+	r.endScope()
+
+	r.currentClassType = enclosingClass
 }
 
 func (r *Resolver) VisitBlockStatement(s *BlockStatement) {
@@ -107,11 +134,15 @@ func (r *Resolver) VisitWhileStatement(s *WhileStatement) {
 }
 
 func (r *Resolver) VisitReturnStatement(s *ReturnStatement) {
-	if r.currentFonction == None {
+	if r.currentFnType == NoFunc {
 		r.errorReporter.Error(s.Keyword.Line, "Can't return from top-level code")
 	}
 
 	if s.Value != nil {
+		if r.currentFnType == Constructor {
+			r.errorReporter.Error(s.Keyword.Line, "Can't return from constructor")
+		}
+
 		r.resolveExpression(s.Value)
 	}
 }
@@ -149,6 +180,14 @@ func (r *Resolver) VisitAssignmentExpression(e *AssignmentExpression) {
 	r.resolveLocal(e, e.Name)
 }
 
+func (r *Resolver) VisitThisExpression(e *ThisExpression) {
+	if r.currentClassType == NoClass {
+		r.errorReporter.Error(e.Keyword.Line, "Can't use 'this' outside of a class")
+	}
+
+	r.resolveLocal(e, e.Keyword)
+}
+
 func (r *Resolver) resolveStatement(s Statement)   { s.Accept(r) }
 func (r *Resolver) resolveExpression(e Expression) { e.Accept(r) }
 
@@ -162,8 +201,8 @@ func (r *Resolver) resolveLocal(e Expression, name lexer.Token) {
 }
 
 func (r *Resolver) resolveFunction(function FunctionStatement, kind FunctionType) {
-	enclosingFunction := r.currentFonction
-	r.currentFonction = kind
+	enclosingFunction := r.currentFnType
+	r.currentFnType = kind
 
 	r.beginScope()
 	for _, parameter := range function.Parameters {
@@ -175,7 +214,7 @@ func (r *Resolver) resolveFunction(function FunctionStatement, kind FunctionType
 	}
 	r.endScope()
 
-	r.currentFonction = enclosingFunction
+	r.currentFnType = enclosingFunction
 }
 
 func (r *Resolver) beginScope() { r.scopes = append(r.scopes, make(map[string]bool)) }

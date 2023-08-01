@@ -6,10 +6,16 @@ import (
 )
 
 type LoxClass struct {
-	name string
+	name    string
+	methods map[string]*LoxFunction
 }
 
-func NewLoxClass(name string) *LoxClass { return &LoxClass{name: name} }
+func NewLoxClass(name string, methods map[string]*LoxFunction) *LoxClass {
+	return &LoxClass{
+		name:    name,
+		methods: methods,
+	}
+}
 
 func (c *LoxClass) Kind() Kind             { return Class }
 func (c *LoxClass) IsTruthy() bool         { return true }
@@ -17,10 +23,27 @@ func (c *LoxClass) String() string         { return c.name }
 func (c *LoxClass) Equals(v LoxValue) bool { return c == v }
 
 func (c *LoxClass) Call(i *Interpreter, arguments []LoxValue) LoxValue {
-	return NewLoxInstance(*c)
+	instance := NewLoxInstance(*c)
+	if constructor, ok := c.findMethod("init"); ok {
+		constructor.Bind(instance).Call(i, arguments)
+	}
+
+	return instance
 }
 
-func (c *LoxClass) Arity() int { return 0 }
+func (c *LoxClass) Arity() int {
+	if constructor, ok := c.findMethod("init"); ok {
+		return constructor.Arity()
+	}
+	return 0
+}
+
+func (c *LoxClass) findMethod(name string) (*LoxFunction, bool) {
+	if method, ok := c.methods[name]; ok {
+		return method, true
+	}
+	return nil, false
+}
 
 type LoxInstance struct {
 	class  LoxClass
@@ -37,6 +60,10 @@ func NewLoxInstance(class LoxClass) *LoxInstance {
 func (i *LoxInstance) Get(name lexer.Token) LoxValue {
 	if value, ok := i.fields[name.Lexeme]; ok {
 		return value
+	}
+
+	if method, ok := i.class.findMethod(name.Lexeme); ok {
+		return method.Bind(i)
 	}
 
 	panic(loxerror.RuntimeError{Message: "Undefined property " + name.Lexeme})

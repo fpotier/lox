@@ -104,12 +104,18 @@ func (i *Interpreter) VisitBlockStatement(blockStatement *BlockStatement) {
 
 func (i *Interpreter) VisitClassStatement(classStatement *ClassStatement) {
 	i.environment.Define(classStatement.Name.Lexeme, NewNilValue())
-	class := NewLoxClass(classStatement.Name.Lexeme)
+
+	methods := make(map[string]*LoxFunction)
+	for _, method := range classStatement.Methods {
+		methods[method.Name.Lexeme] = NewLoxFunction(method, i.environment, method.Name.Lexeme == "init")
+	}
+
+	class := NewLoxClass(classStatement.Name.Lexeme, methods)
 	i.environment.Assign(classStatement.Name, class)
 }
 
 func (i *Interpreter) VisitFunctionStatement(functionStatement *FunctionStatement) {
-	function := NewLoxFunction(functionStatement, i.environment)
+	function := NewLoxFunction(functionStatement, i.environment, false)
 	i.environment.Define(functionStatement.Name.Lexeme, function)
 }
 
@@ -120,6 +126,10 @@ func (i *Interpreter) VisitReturnStatement(returnStatement *ReturnStatement) {
 	}
 
 	panic(value)
+}
+
+func (i *Interpreter) VisitThisExpression(thisExpression *ThisExpression) {
+	i.Value = i.lookupVariable(thisExpression.Keyword, thisExpression)
 }
 
 func (i *Interpreter) VisitBinaryExpression(binaryExpression *BinaryExpression) {

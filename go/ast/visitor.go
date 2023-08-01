@@ -11,6 +11,7 @@ type Visitor interface {
 	VisitCallExpression(*CallExpression)
 	VisitGetExpression(*GetExpression)
 	VisitSetExpression(*SetExpression)
+	VisitThisExpression(*ThisExpression)
 
 	VisitExpressionStatement(*ExpressionStatement)
 	VisitPrintStatement(*PrintStatement)

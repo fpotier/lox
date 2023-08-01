@@ -160,9 +160,9 @@ func (p *Parser) classDeclaration() Statement {
 	name := p.consume(lexer.Identifier, "Expect class name")
 	p.consume(lexer.LeftBrace, "Expect '{' before class body")
 
-	methods := make([]FunctionStatement, 0)
+	methods := make([]*FunctionStatement, 0)
 	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
-		methods = append(methods, *p.function("method").(*FunctionStatement))
+		methods = append(methods, p.function("method").(*FunctionStatement))
 	}
 
 	p.consume(lexer.RightBrace, "Expect '}' after class body")
@@ -452,6 +452,8 @@ func (p *Parser) primary() Expression {
 		return NewLiteralExpression(NewBooleanValue(true))
 	case p.match(lexer.Nil):
 		return NewLiteralExpression(NewNilValue())
+	case p.match(lexer.This):
+		return NewThisExpression(p.previous())
 	}
 
 	// TODO: is there a better solution?

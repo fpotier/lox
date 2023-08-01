@@ -167,3 +167,13 @@ func NewSetExpression(object Expression, name lexer.Token, value Expression) *Se
 func (e *SetExpression) Accept(visitor Visitor) {
 	visitor.VisitSetExpression(e)
 }
+
+type ThisExpression struct {
+	Keyword lexer.Token
+}
+
+func NewThisExpression(keyword lexer.Token) *ThisExpression { return &ThisExpression{Keyword: keyword} }
+
+func (e *ThisExpression) Accept(visitor Visitor) {
+	visitor.VisitThisExpression(e)
+}

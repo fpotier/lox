@@ -131,10 +131,10 @@ func (s *ReturnStatement) Accept(visitor Visitor) {
 type ClassStatement struct {
 	Name       lexer.Token
 	Superclass VariableExpression
-	Methods    []FunctionStatement
+	Methods    []*FunctionStatement
 }
 
-func NewClassStatement(name lexer.Token, methods []FunctionStatement) *ClassStatement {
+func NewClassStatement(name lexer.Token, methods []*FunctionStatement) *ClassStatement {
 	return &ClassStatement{
 		Name:    name,
 		Methods: methods,
