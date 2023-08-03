@@ -1,10 +1,11 @@
-package ast
+package runtime
 
 import (
 	"fmt"
 
-	"github.com/fpotier/lox/go/lexer"
-	"github.com/fpotier/lox/go/loxerror"
+	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/loxerror"
 )
 
 type FunctionType uint8
@@ -44,22 +45,51 @@ func NewResolver(errorReporter loxerror.ErrorReporter, i *Interpreter) *Resolver
 	return &r
 }
 
-func (r *Resolver) ResolveProgram(program []Statement) {
+func (r *Resolver) ResolveProgram(program []ast.Statement) {
 	for _, statement := range program {
 		r.resolveStatement(statement)
 	}
 }
 
-func (r *Resolver) VisitGetExpression(e *GetExpression) {
+func (r *Resolver) VisitAssignmentExpression(e *ast.AssignmentExpression) {
+	r.resolveExpression(e.Value)
+	r.resolveLocal(e, e.Name)
+}
+
+func (r *Resolver) VisitBinaryExpression(e *ast.BinaryExpression) {
+	r.resolveExpression(e.LHS)
+	r.resolveExpression(e.RHS)
+}
+
+func (r *Resolver) VisitCallExpression(e *ast.CallExpression) {
+	r.resolveExpression(e.Callee)
+
+	for _, argument := range e.Args {
+		r.resolveExpression(argument)
+	}
+}
+
+func (r *Resolver) VisitGetExpression(e *ast.GetExpression) {
 	r.resolveExpression(e.Object)
 }
 
-func (r *Resolver) VisitSetExpression(e *SetExpression) {
+func (r *Resolver) VisitGroupingExpression(e *ast.GroupingExpression) {
+	r.resolveExpression(e.Expr)
+}
+
+func (r *Resolver) VisitLiteralExpression(*ast.LiteralExpression) {}
+
+func (r *Resolver) VisitLogicalExpression(e *ast.LogicalExpression) {
+	r.resolveExpression(e.LHS)
+	r.resolveExpression(e.RHS)
+}
+
+func (r *Resolver) VisitSetExpression(e *ast.SetExpression) {
 	r.resolveExpression(e.Value)
 	r.resolveExpression(e.Object)
 }
 
-func (r *Resolver) VisitSuperExpression(e *SuperExpression) {
+func (r *Resolver) VisitSuperExpression(e *ast.SuperExpression) {
 	if r.currentClassType == NoClass {
 		r.errorReporter.Error(e.Keyword.Line, "Can't use 'super' outside of a class")
 	} else if r.currentClassType != InSubClass {
@@ -69,7 +99,19 @@ func (r *Resolver) VisitSuperExpression(e *SuperExpression) {
 	r.resolveLocal(e, e.Keyword)
 }
 
-func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
+func (r *Resolver) VisitThisExpression(e *ast.ThisExpression) {
+	if r.currentClassType == NoClass {
+		r.errorReporter.Error(e.Keyword.Line, "Can't use 'this' outside of a class")
+	}
+
+	r.resolveLocal(e, e.Keyword)
+}
+
+func (r *Resolver) VisitUnaryExpression(e *ast.UnaryExpression) {
+	r.resolveExpression(e.RHS)
+}
+
+func (r *Resolver) VisitVariableExpression(e *ast.VariableExpression) {
 	if len(r.scopes) > 0 {
 		if declared, ok := r.scopes[len(r.scopes)-1][e.Name.Lexeme]; ok && !declared {
 			r.errorReporter.Error(e.Name.Line, "Can't read local variable in its own initializer")
@@ -79,7 +121,15 @@ func (r *Resolver) VisitVariableExpression(e *VariableExpression) {
 	r.resolveLocal(e, e.Name)
 }
 
-func (r *Resolver) VisitClassStatement(s *ClassStatement) {
+func (r *Resolver) VisitBlockStatement(s *ast.BlockStatement) {
+	r.beginScope()
+	for _, statement := range s.Statements {
+		r.resolveStatement(statement)
+	}
+	r.endScope()
+}
+
+func (r *Resolver) VisitClassStatement(s *ast.ClassStatement) {
 	enclosingClass := r.currentClassType
 	r.currentClassType = InClass
 
@@ -115,38 +165,18 @@ func (r *Resolver) VisitClassStatement(s *ClassStatement) {
 	r.currentClassType = enclosingClass
 }
 
-func (r *Resolver) VisitBlockStatement(s *BlockStatement) {
-	r.beginScope()
-	for _, statement := range s.Statements {
-		r.resolveStatement(statement)
-	}
-	r.endScope()
+func (r *Resolver) VisitExpressionStatement(s *ast.ExpressionStatement) {
+	r.resolveExpression(s.Expression)
 }
 
-func (r *Resolver) VisitVariableStatement(s *VariableStatement) {
-	r.declare(s.Name)
-	if s.Initializer != nil {
-		r.resolveExpression(s.Initializer)
-	}
-	r.define(s.Name)
-}
-
-func (r *Resolver) VisitFunctionStatement(s *FunctionStatement) {
+func (r *Resolver) VisitFunctionStatement(s *ast.FunctionStatement) {
 	r.declare(s.Name)
 	r.define(s.Name)
 
 	r.resolveFunction(*s, Func)
 }
 
-func (r *Resolver) VisitExpressionStatement(s *ExpressionStatement) {
-	r.resolveExpression(s.Expression)
-}
-
-func (r *Resolver) VisitPrintStatement(s *PrintStatement) {
-	r.resolveExpression(s.Expression)
-}
-
-func (r *Resolver) VisitIfStatement(s *IfStatement) {
+func (r *Resolver) VisitIfStatement(s *ast.IfStatement) {
 	r.resolveExpression(s.Condition)
 	r.resolveStatement(s.ThenCode)
 	if s.ElseCode != nil {
@@ -154,12 +184,11 @@ func (r *Resolver) VisitIfStatement(s *IfStatement) {
 	}
 }
 
-func (r *Resolver) VisitWhileStatement(s *WhileStatement) {
-	r.resolveExpression(s.Condition)
-	r.resolveStatement(s.Body)
+func (r *Resolver) VisitPrintStatement(s *ast.PrintStatement) {
+	r.resolveExpression(s.Expression)
 }
 
-func (r *Resolver) VisitReturnStatement(s *ReturnStatement) {
+func (r *Resolver) VisitReturnStatement(s *ast.ReturnStatement) {
 	if r.currentFnType == NoFunc {
 		r.errorReporter.Error(s.Keyword.Line, "Can't return from top-level code")
 	}
@@ -173,51 +202,23 @@ func (r *Resolver) VisitReturnStatement(s *ReturnStatement) {
 	}
 }
 
-func (r *Resolver) VisitBinaryExpression(e *BinaryExpression) {
-	r.resolveExpression(e.LHS)
-	r.resolveExpression(e.RHS)
-}
-
-func (r *Resolver) VisitGroupingExpression(e *GroupingExpression) {
-	r.resolveExpression(e.Expr)
-}
-
-func (r *Resolver) VisitLiteralExpression(*LiteralExpression) {}
-
-func (r *Resolver) VisitUnaryExpression(e *UnaryExpression) {
-	r.resolveExpression(e.RHS)
-}
-
-func (r *Resolver) VisitLogicalExpression(e *LogicalExpression) {
-	r.resolveExpression(e.LHS)
-	r.resolveExpression(e.RHS)
-}
-
-func (r *Resolver) VisitCallExpression(e *CallExpression) {
-	r.resolveExpression(e.Callee)
-
-	for _, argument := range e.Args {
-		r.resolveExpression(argument)
+func (r *Resolver) VisitVariableStatement(s *ast.VariableStatement) {
+	r.declare(s.Name)
+	if s.Initializer != nil {
+		r.resolveExpression(s.Initializer)
 	}
+	r.define(s.Name)
 }
 
-func (r *Resolver) VisitAssignmentExpression(e *AssignmentExpression) {
-	r.resolveExpression(e.Value)
-	r.resolveLocal(e, e.Name)
+func (r *Resolver) VisitWhileStatement(s *ast.WhileStatement) {
+	r.resolveExpression(s.Condition)
+	r.resolveStatement(s.Body)
 }
 
-func (r *Resolver) VisitThisExpression(e *ThisExpression) {
-	if r.currentClassType == NoClass {
-		r.errorReporter.Error(e.Keyword.Line, "Can't use 'this' outside of a class")
-	}
+func (r *Resolver) resolveStatement(s ast.Statement)   { s.Accept(r) }
+func (r *Resolver) resolveExpression(e ast.Expression) { e.Accept(r) }
 
-	r.resolveLocal(e, e.Keyword)
-}
-
-func (r *Resolver) resolveStatement(s Statement)   { s.Accept(r) }
-func (r *Resolver) resolveExpression(e Expression) { e.Accept(r) }
-
-func (r *Resolver) resolveLocal(e Expression, name lexer.Token) {
+func (r *Resolver) resolveLocal(e ast.Expression, name lexer.Token) {
 	for i := len(r.scopes) - 1; i >= 0; i-- {
 		if _, ok := r.scopes[i][name.Lexeme]; ok {
 			r.interpreter.resolve(e, len(r.scopes)-1-i)
@@ -226,7 +227,7 @@ func (r *Resolver) resolveLocal(e Expression, name lexer.Token) {
 	}
 }
 
-func (r *Resolver) resolveFunction(function FunctionStatement, kind FunctionType) {
+func (r *Resolver) resolveFunction(function ast.FunctionStatement, kind FunctionType) {
 	enclosingFunction := r.currentFnType
 	r.currentFnType = kind
 

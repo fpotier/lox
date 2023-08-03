@@ -1,10 +1,11 @@
-package ast
+package parser
 
 import (
 	"fmt"
 
-	"github.com/fpotier/lox/go/lexer"
-	"github.com/fpotier/lox/go/loxerror"
+	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/loxerror"
 )
 
 // Grammar rules of the Lox language
@@ -75,18 +76,23 @@ import (
 //            | IDENTIFIER
 //            | "super" "." IDENTIFIER
 //
+// function -> IDENTIFIER "(" parameters? ")" block
+//
+// parameters -> expression ( "," IDENTIFIER )*
+//
 // arguments -> expression ( "," expression )*
 //
-// function -> IDENTIFIER "(" parameters? ")" block
 
-type Parser struct {
-	errorReporter loxerror.ErrorReporter
-	tokens        []lexer.Token
-	current       int
+func NewParser(errorReporter loxerror.ErrorReporter, tokens []lexer.Token) *Parser {
+	return &Parser{
+		errorReporter: errorReporter,
+		tokens:        tokens,
+		current:       0,
+	}
 }
 
-func (p *Parser) Parse() []Statement {
-	statements := make([]Statement, 0)
+func (p *Parser) Parse() []ast.Statement {
+	statements := make([]ast.Statement, 0)
 	for !p.isAtEnd() {
 		s := p.declaration()
 		statements = append(statements, s)
@@ -95,7 +101,7 @@ func (p *Parser) Parse() []Statement {
 	return statements
 }
 
-func (p *Parser) declaration() Statement {
+func (p *Parser) declaration() ast.Statement {
 	defer func() {
 		if r := recover(); r != nil {
 			if _, ok := r.(loxerror.ParserError); ok {
@@ -106,7 +112,7 @@ func (p *Parser) declaration() Statement {
 		}
 	}()
 
-	var statement Statement
+	var statement ast.Statement
 	switch {
 	case p.match(lexer.Var):
 		statement = p.varDeclaration()
@@ -115,7 +121,7 @@ func (p *Parser) declaration() Statement {
 	case p.match(lexer.Class):
 		statement = p.classDeclaration()
 	case p.match(lexer.LeftBrace):
-		statement = NewBlockStatement(p.block())
+		statement = ast.NewBlockStatement(p.block())
 	default:
 		statement = p.statement()
 	}
@@ -123,26 +129,26 @@ func (p *Parser) declaration() Statement {
 	return statement
 }
 
-func (p *Parser) varDeclaration() Statement {
+func (p *Parser) varDeclaration() ast.Statement {
 	name := p.consume(lexer.Identifier, "Expect a variable name")
-	var initializer Expression
+	var initializer ast.Expression
 	if p.match(lexer.Equal) {
 		initializer = p.expression()
 	}
 
 	p.consume(lexer.Semicolon, "Expect ';' after variable declaration")
 
-	return NewVariableStatement(name, initializer)
+	return ast.NewVariableStatement(name, initializer)
 }
 
-func (p *Parser) function(kind string) Statement {
+func (p *Parser) function(kind string) ast.Statement {
 	name := p.consume(lexer.Identifier, fmt.Sprintf("Expect %s name.", kind))
 
 	p.consume(lexer.LeftParenthesis, fmt.Sprintf("Expect '(' after %s name.", kind))
 	parameters := make([]lexer.Token, 0)
 	if !p.check(lexer.RightParenthesis) {
 		for next := true; next; next = p.match(lexer.Comma) {
-			if len(parameters) >= maxArgs {
+			if len(parameters) >= ast.Limits.MaxArgs {
 				p.errorReporter.Error(p.peek().Line, "Can't have more than 255 parameters")
 			}
 
@@ -154,42 +160,31 @@ func (p *Parser) function(kind string) Statement {
 	p.consume(lexer.LeftBrace, "Expect '{' after parameters")
 	body := p.block()
 
-	return NewFunctionStatement(name, parameters, body)
+	return ast.NewFunctionStatement(name, parameters, body)
 }
 
-func (p *Parser) classDeclaration() Statement {
+func (p *Parser) classDeclaration() ast.Statement {
 	name := p.consume(lexer.Identifier, "Expect class name")
 
-	var superclass *VariableExpression
+	var superclass *ast.VariableExpression
 	if p.match(lexer.Less) {
 		p.consume(lexer.Identifier, "Expect superclass name")
-		superclass = NewVariableExpression(p.previous())
+		superclass = ast.NewVariableExpression(p.previous())
 	}
 
 	p.consume(lexer.LeftBrace, "Expect '{' before class body")
 
-	methods := make([]*FunctionStatement, 0)
+	methods := make([]*ast.FunctionStatement, 0)
 	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
-		methods = append(methods, p.function("method").(*FunctionStatement))
+		methods = append(methods, p.function("method").(*ast.FunctionStatement))
 	}
 
 	p.consume(lexer.RightBrace, "Expect '}' after class body")
 
-	return NewClassStatement(name, superclass, methods)
+	return ast.NewClassStatement(name, superclass, methods)
 }
 
-func (p *Parser) block() []Statement {
-	statements := make([]Statement, 0)
-	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
-		s := p.declaration()
-		statements = append(statements, s)
-	}
-	p.consume(lexer.RightBrace, "Expect '}' after block")
-
-	return statements
-}
-
-func (p *Parser) statement() Statement {
+func (p *Parser) statement() ast.Statement {
 	switch {
 	case p.match(lexer.For):
 		return p.forStatement()
@@ -202,16 +197,23 @@ func (p *Parser) statement() Statement {
 	case p.match(lexer.While):
 		return p.whileStatment()
 	case p.match(lexer.LeftBrace):
-		return NewBlockStatement(p.block())
+		return ast.NewBlockStatement(p.block())
 	default:
 		return p.expressionStatement()
 	}
 }
 
+func (p *Parser) expressionStatement() ast.Statement {
+	expression := p.expression()
+	p.consume(lexer.Semicolon, "Expect ';' after value")
+
+	return ast.NewExpressionStatement(expression)
+}
+
 // TODO: check where we create an additional block
-func (p *Parser) forStatement() Statement {
+func (p *Parser) forStatement() ast.Statement {
 	p.consume(lexer.LeftParenthesis, "Expect '(' after 'for'")
-	var initializer Statement
+	var initializer ast.Statement
 	switch {
 	case p.match(lexer.Semicolon):
 		// Do nothing
@@ -222,13 +224,13 @@ func (p *Parser) forStatement() Statement {
 		initializer = p.expressionStatement()
 	}
 
-	var condition Expression
+	var condition ast.Expression
 	if !p.check(lexer.Semicolon) {
 		condition = p.expression()
 	}
 	p.consume(lexer.Semicolon, "Expect ';' after loop condition")
 
-	var increment Expression
+	var increment ast.Expression
 	if !p.check(lexer.RightParenthesis) {
 		increment = p.expression()
 	}
@@ -238,44 +240,44 @@ func (p *Parser) forStatement() Statement {
 
 	if increment != nil {
 		// Note: I think this creates a useless block
-		body = NewBlockStatement([]Statement{body, NewExpressionStatement(increment)})
+		body = ast.NewBlockStatement([]ast.Statement{body, ast.NewExpressionStatement(increment)})
 	}
 
 	if condition == nil {
-		condition = NewLiteralExpression(NewBooleanValue(true))
+		condition = ast.NewLiteralExpression(ast.NewBooleanValue(true))
 	}
 
-	var forLoop Statement = NewWhileStatement(condition, body)
+	var forLoop ast.Statement = ast.NewWhileStatement(condition, body)
 	if initializer != nil {
-		forLoop = NewBlockStatement([]Statement{initializer, forLoop})
+		forLoop = ast.NewBlockStatement([]ast.Statement{initializer, forLoop})
 	}
 
 	return forLoop
 }
 
-func (p *Parser) printStatement() Statement {
-	value := p.expression()
-	p.consume(lexer.Semicolon, "Expect ';' after value")
-
-	return NewPrintStatement(value)
-}
-
-func (p *Parser) ifStatement() Statement {
+func (p *Parser) ifStatement() ast.Statement {
 	p.consume(lexer.LeftParenthesis, "Expect '(' after 'if' statement")
 	expr := p.expression()
 	p.consume(lexer.RightParenthesis, "Expect ')' after 'if' condition")
 	thenCode := p.statement()
-	var elseCode Statement
+	var elseCode ast.Statement
 	if p.match(lexer.Else) {
 		elseCode = p.statement()
 	}
 
-	return NewIfStatment(expr, thenCode, elseCode)
+	return ast.NewIfStatment(expr, thenCode, elseCode)
 }
 
-func (p *Parser) returnStatement() Statement {
+func (p *Parser) printStatement() ast.Statement {
+	value := p.expression()
+	p.consume(lexer.Semicolon, "Expect ';' after value")
+
+	return ast.NewPrintStatement(value)
+}
+
+func (p *Parser) returnStatement() ast.Statement {
 	keyword := p.previous()
-	var value Expression
+	var value ast.Expression
 
 	if !p.check(lexer.Semicolon) {
 		value = p.expression()
@@ -283,30 +285,34 @@ func (p *Parser) returnStatement() Statement {
 
 	p.consume(lexer.Semicolon, "Expect ';' after return value")
 
-	return NewReturnStatement(keyword, value)
+	return ast.NewReturnStatement(keyword, value)
 }
 
-func (p *Parser) whileStatment() Statement {
+func (p *Parser) whileStatment() ast.Statement {
 	p.consume(lexer.LeftParenthesis, "Expect '(' after 'while'")
 	condition := p.expression()
 	p.consume(lexer.RightParenthesis, "Expect ')' after 'while' condition")
 	body := p.statement()
 
-	return NewWhileStatement(condition, body)
+	return ast.NewWhileStatement(condition, body)
 }
 
-func (p *Parser) expressionStatement() Statement {
-	expression := p.expression()
-	p.consume(lexer.Semicolon, "Expect ';' after value")
+func (p *Parser) block() []ast.Statement {
+	statements := make([]ast.Statement, 0)
+	for !p.check(lexer.RightBrace) && !p.isAtEnd() {
+		s := p.declaration()
+		statements = append(statements, s)
+	}
+	p.consume(lexer.RightBrace, "Expect '}' after block")
 
-	return NewExpressionStatement(expression)
+	return statements
 }
 
-func (p *Parser) expression() Expression {
+func (p *Parser) expression() ast.Expression {
 	return p.assignment()
 }
 
-func (p *Parser) assignment() Expression {
+func (p *Parser) assignment() ast.Expression {
 	expression := p.or()
 
 	if p.match(lexer.Equal) {
@@ -314,10 +320,10 @@ func (p *Parser) assignment() Expression {
 		value := p.assignment()
 
 		switch expression := expression.(type) {
-		case *VariableExpression:
-			return NewAssignmentExpression(expression.Name, value)
-		case *GetExpression:
-			return NewSetExpression(expression.Object, expression.Name, value)
+		case *ast.VariableExpression:
+			return ast.NewAssignmentExpression(expression.Name, value)
+		case *ast.GetExpression:
+			return ast.NewSetExpression(expression.Object, expression.Name, value)
 		}
 
 		// No need to go to put the parser in recovery mode
@@ -330,91 +336,91 @@ func (p *Parser) assignment() Expression {
 	return expression
 }
 
-func (p *Parser) or() Expression {
+func (p *Parser) or() ast.Expression {
 	expr := p.and()
 
 	for p.match(lexer.Or) {
 		operator := p.previous()
 		rhs := p.and()
-		expr = NewLogicalExpression(expr, operator, rhs)
+		expr = ast.NewLogicalExpression(expr, operator, rhs)
 	}
 
 	return expr
 }
 
-func (p *Parser) and() Expression {
+func (p *Parser) and() ast.Expression {
 	expr := p.equality()
 
 	for p.match(lexer.And) {
 		operator := p.previous()
 		rhs := p.equality()
-		expr = NewLogicalExpression(expr, operator, rhs)
+		expr = ast.NewLogicalExpression(expr, operator, rhs)
 	}
 
 	return expr
 }
 
-func (p *Parser) equality() Expression {
+func (p *Parser) equality() ast.Expression {
 	expr := p.comparison()
 
 	for p.match(lexer.BangEqual, lexer.EqualEqual) {
 		operator := p.previous()
 		rhs := p.comparison()
-		expr = NewBinaryExpression(expr, operator, rhs)
+		expr = ast.NewBinaryExpression(expr, operator, rhs)
 	}
 
 	return expr
 }
 
-func (p *Parser) comparison() Expression {
+func (p *Parser) comparison() ast.Expression {
 	expr := p.term()
 
 	for p.match(lexer.Greater, lexer.GreaterEqual, lexer.Less, lexer.LessEqual) {
 		operator := p.previous()
 		rhs := p.term()
-		expr = NewBinaryExpression(expr, operator, rhs)
+		expr = ast.NewBinaryExpression(expr, operator, rhs)
 	}
 
 	return expr
 }
 
-func (p *Parser) term() Expression {
+func (p *Parser) term() ast.Expression {
 	expr := p.factor()
 
 	for p.match(lexer.Plus, lexer.Dash) {
 		operator := p.previous()
 		rhs := p.factor()
 
-		expr = NewBinaryExpression(expr, operator, rhs)
+		expr = ast.NewBinaryExpression(expr, operator, rhs)
 	}
 
 	return expr
 }
 
-func (p *Parser) factor() Expression {
+func (p *Parser) factor() ast.Expression {
 	expr := p.unary()
 
 	for p.match(lexer.Star, lexer.Slash) {
 		operator := p.previous()
 		rhs := p.unary()
-		expr = NewBinaryExpression(expr, operator, rhs)
+		expr = ast.NewBinaryExpression(expr, operator, rhs)
 	}
 
 	return expr
 }
 
-func (p *Parser) unary() Expression {
+func (p *Parser) unary() ast.Expression {
 	if p.match(lexer.Bang, lexer.Dash) {
 		operator := p.previous()
 		rhs := p.unary()
 
-		return NewUnaryExpression(operator, rhs)
+		return ast.NewUnaryExpression(operator, rhs)
 	}
 
 	return p.call()
 }
 
-func (p *Parser) call() Expression {
+func (p *Parser) call() ast.Expression {
 	expr := p.primary()
 
 loop:
@@ -424,7 +430,7 @@ loop:
 			expr = p.finishCall(expr)
 		case p.match(lexer.Dot):
 			name := p.consume(lexer.Identifier, "Expect property name after '.'")
-			expr = NewGetExpression(expr, name)
+			expr = ast.NewGetExpression(expr, name)
 		default:
 			break loop
 		}
@@ -433,13 +439,11 @@ loop:
 	return expr
 }
 
-func (p *Parser) finishCall(callee Expression) Expression {
-	const MaxArgs = 255
-
-	args := make([]Expression, 0)
+func (p *Parser) finishCall(callee ast.Expression) ast.Expression {
+	args := make([]ast.Expression, 0)
 	if !p.check(lexer.RightParenthesis) {
 		for next := true; next; next = p.match(lexer.Comma) {
-			if len(args) >= MaxArgs {
+			if len(args) >= ast.Limits.MaxArgs {
 				p.errorReporter.Error(p.peek().Line, "Can't have more than 255 arguments")
 			}
 			args = append(args, p.expression())
@@ -448,54 +452,37 @@ func (p *Parser) finishCall(callee Expression) Expression {
 
 	position := p.consume(lexer.RightParenthesis, "Execpect ')' after function arguments")
 
-	return NewCallExpression(callee, position, args)
+	return ast.NewCallExpression(callee, position, args)
 }
 
-func (p *Parser) primary() Expression {
-	// TODO we should probably have BooleanLiteral and maybe ObjectLiteral rather than strings
+func (p *Parser) primary() ast.Expression {
 	switch {
 	case p.match(lexer.False):
-		return NewLiteralExpression(NewBooleanValue(false))
+		return ast.NewLiteralExpression(ast.NewBooleanValue(false))
 	case p.match(lexer.True):
-		return NewLiteralExpression(NewBooleanValue(true))
+		return ast.NewLiteralExpression(ast.NewBooleanValue(true))
 	case p.match(lexer.Nil):
-		return NewLiteralExpression(NewNilValue())
+		return ast.NewLiteralExpression(ast.NewNilValue())
 	case p.match(lexer.This):
-		return NewThisExpression(p.previous())
+		return ast.NewThisExpression(p.previous())
 	case p.match(lexer.Super):
 		keyword := p.previous()
 		p.consume(lexer.Dot, "Expect '.' after 'super'")
 		method := p.consume(lexer.Identifier, "Expect superclass method name")
-		return NewSuperExpression(keyword, method)
-	}
-
-	// TODO: is there a better solution?
-	if p.match(lexer.Number) {
-		return NewLiteralExpression(&NumberValue{Value: p.previous().Literal.(*lexer.NumberLiteral).Value})
-	} else if p.match(lexer.String) {
-		return NewLiteralExpression(&StringValue{Value: p.previous().Literal.(*lexer.StringLiteral).Value})
-	}
-
-	if p.match(lexer.Identifier) {
-		return NewVariableExpression(p.previous())
-	}
-
-	if p.match(lexer.LeftParenthesis) {
+		return ast.NewSuperExpression(keyword, method)
+	case p.match(lexer.Number):
+		return ast.NewLiteralExpression(ast.NewNumberValue(p.previous().Literal.(*lexer.NumberLiteral).Value))
+	case p.match(lexer.String):
+		return ast.NewLiteralExpression(ast.NewStringValue(p.previous().Literal.(*lexer.StringLiteral).Value))
+	case p.match(lexer.Identifier):
+		return ast.NewVariableExpression(p.previous())
+	case p.match(lexer.LeftParenthesis):
 		expr := p.expression()
 		p.consume(lexer.RightParenthesis, "Expect ')' after expression")
-
-		return NewGroupingExpression(expr)
-	}
-
-	p.errorReporter.Error(p.peek().Line, "expect expression")
-	panic(loxerror.ParserError{Message: "expect expression"})
-}
-
-func NewParser(errorReporter loxerror.ErrorReporter, tokens []lexer.Token) *Parser {
-	return &Parser{
-		errorReporter: errorReporter,
-		tokens:        tokens,
-		current:       0,
+		return ast.NewGroupingExpression(expr)
+	default:
+		p.errorReporter.Error(p.peek().Line, "expect expression")
+		panic(loxerror.ParserError{Message: "expect expression"})
 	}
 }
 
@@ -572,4 +559,10 @@ func (p *Parser) synchronize() {
 			p.advance()
 		}
 	}
+}
+
+type Parser struct {
+	errorReporter loxerror.ErrorReporter
+	tokens        []lexer.Token
+	current       int
 }

@@ -4,6 +4,10 @@ run:
 output:
   format: colored-line-number
   print-issued-lines: true
+linters-settings:
+  gomnd:
+    ignored-files:
+      - 'ast/limits\.go$'
 linters:
   enable-all: true
   disable:
@@ -24,11 +28,3 @@ linters:
     - nonamedreturns
     - varnamelen
     - wsl
-linter-settings:
-  nlreturn:
-    blocksize: 2
-  revive:
-    - name: var-naming
-      arguments:
-        - ["Lhs", "Rhs", "Eof"]
-        - []

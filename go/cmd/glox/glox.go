@@ -7,17 +7,18 @@ import (
 	"log"
 	"os"
 
-	"github.com/fpotier/lox/go/ast"
-	"github.com/fpotier/lox/go/lexer"
+	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/parser"
+	"github.com/fpotier/lox/go/pkg/runtime"
 	"github.com/sean-/sysexits"
 )
 
 type Lox struct {
 	hadError    bool
 	lexer       *lexer.Lexer
-	parser      *ast.Parser
-	resolver    *ast.Resolver
-	interpreter *ast.Interpreter
+	parser      *parser.Parser
+	resolver    *runtime.Resolver
+	interpreter *runtime.Interpreter
 	stdout      io.Writer
 	stderr      io.Writer
 }
@@ -40,7 +41,7 @@ func NewLox(fds ...io.Writer) *Lox {
 			lox.stderr = fd
 		}
 	}
-	lox.interpreter = ast.NewInterpreter(lox.stdout, &lox)
+	lox.interpreter = runtime.NewInterpreter(lox.stdout, &lox)
 
 	return &lox
 }
@@ -80,13 +81,13 @@ func (l *Lox) run(sourceCode string) {
 	l.lexer = lexer.NewLexer(l, sourceCode)
 	tokens := l.lexer.Tokens()
 
-	l.parser = ast.NewParser(l, tokens)
+	l.parser = parser.NewParser(l, tokens)
 	statements := l.parser.Parse()
 	if l.hadError {
 		return
 	}
 
-	l.resolver = ast.NewResolver(l, l.interpreter)
+	l.resolver = runtime.NewResolver(l, l.interpreter)
 	l.resolver.ResolveProgram(statements)
 	if l.hadError {
 		return

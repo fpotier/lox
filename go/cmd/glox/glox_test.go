@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/diff"
 )
 
-const TestDirectory = "../test/"
+const TestDirectory = "../../../test/"
 
 func TestRunFile(t *testing.T) {
 	t.Parallel()

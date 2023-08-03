@@ -1,37 +1,38 @@
-package ast
+package runtime
 
 import (
 	"fmt"
 
-	"github.com/fpotier/lox/go/lexer"
-	"github.com/fpotier/lox/go/loxerror"
+	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/loxerror"
 )
 
 type Environment struct {
 	enclosing *Environment
-	symbols   map[string]LoxValue
+	symbols   map[string]ast.LoxValue
 }
 
 func NewEnvironment() *Environment {
 	return &Environment{
 		enclosing: nil,
-		symbols:   make(map[string]LoxValue),
+		symbols:   make(map[string]ast.LoxValue),
 	}
 }
 
 func NewSubEnvironment(enclosing *Environment) *Environment {
 	return &Environment{
 		enclosing: enclosing,
-		symbols:   make(map[string]LoxValue),
+		symbols:   make(map[string]ast.LoxValue),
 	}
 }
 
-func (e *Environment) Define(name string, value LoxValue) {
+func (e *Environment) Define(name string, value ast.LoxValue) {
 	// Note: redeclaring a top-level (global) variable is allowed
 	e.symbols[name] = value
 }
 
-func (e *Environment) Get(name lexer.Token) LoxValue {
+func (e *Environment) Get(name lexer.Token) ast.LoxValue {
 	if val, ok := e.symbols[name.Lexeme]; ok {
 		return val
 	}
@@ -43,20 +44,11 @@ func (e *Environment) Get(name lexer.Token) LoxValue {
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
 }
 
-func (e *Environment) GetAt(distance int, name string) LoxValue {
+func (e *Environment) GetAt(distance int, name string) ast.LoxValue {
 	return e.ancestor(distance).symbols[name]
 }
 
-func (e *Environment) ancestor(distance int) *Environment {
-	env := e
-	for i := 0; i < distance; i++ {
-		env = env.enclosing
-	}
-
-	return env
-}
-
-func (e *Environment) Assign(name lexer.Token, value LoxValue) {
+func (e *Environment) Assign(name lexer.Token, value ast.LoxValue) {
 	if _, ok := e.symbols[name.Lexeme]; ok {
 		e.symbols[name.Lexeme] = value
 		return
@@ -70,6 +62,15 @@ func (e *Environment) Assign(name lexer.Token, value LoxValue) {
 	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
 }
 
-func (e *Environment) AssignAt(distance int, name lexer.Token, value LoxValue) {
+func (e *Environment) AssignAt(distance int, name lexer.Token, value ast.LoxValue) {
 	e.ancestor(distance).symbols[name.Lexeme] = value
+}
+
+func (e *Environment) ancestor(distance int) *Environment {
+	env := e
+	for i := 0; i < distance; i++ {
+		env = env.enclosing
+	}
+
+	return env
 }
