@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type Kind uint8
 
@@ -35,7 +38,7 @@ func NewBooleanValue(v bool) *BooleanValue {
 }
 func (b BooleanValue) Kind() Kind     { return Boolean }
 func (b BooleanValue) IsTruthy() bool { return b.Value }
-func (b BooleanValue) String() string { return fmt.Sprintf("%v", b.Value) }
+func (b BooleanValue) String() string { return strconv.FormatBool(b.Value) }
 func (b BooleanValue) Equals(v LoxValue) bool {
 	if v, ok := v.(*BooleanValue); ok {
 		return b.Value == v.Value

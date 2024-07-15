@@ -3,7 +3,7 @@ package runtime
 import "github.com/fpotier/lox/go/pkg/ast"
 
 type LoxCallable interface {
-	Call(*Interpreter, []ast.LoxValue) ast.LoxValue
+	Call(interpreter *Interpreter, arguments []ast.LoxValue) ast.LoxValue
 	Arity() int
 }
 

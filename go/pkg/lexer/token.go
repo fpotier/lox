@@ -25,7 +25,7 @@ func (t *Token) String() string {
 		return fmt.Sprintf("%v (value:%v)", tokenRepresentation[t.Type], t.Literal.String())
 	}
 
-	return fmt.Sprintf("%v", tokenRepresentation[t.Type])
+	return tokenRepresentation[t.Type]
 }
 
 const (

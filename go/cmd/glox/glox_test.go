@@ -17,7 +17,7 @@ const TestDirectory = "../../../test/"
 func TestRunFile(t *testing.T) {
 	t.Parallel()
 
-	err := filepath.WalkDir(TestDirectory, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(TestDirectory, func(path string, _ fs.DirEntry, _ error) error {
 		pattern := regexp.MustCompile("^.*expect: (.*)$")
 
 		t.Run(path, func(t *testing.T) {
