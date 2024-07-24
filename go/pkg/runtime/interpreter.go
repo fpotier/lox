@@ -272,9 +272,9 @@ func (i *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
 }
 
 func (i *Interpreter) VisitReturnStatement(returnStatement *ast.ReturnStatement) {
-	var value ast.LoxValue
+	var value ast.LoxValue = ast.NewNilValue()
 	if returnStatement.Value != nil {
-		value = i.evaluate(returnStatement.Value)
+		value = i.evaluate(returnStatement.Value).(ast.LoxValue)
 	}
 
 	panic(value)

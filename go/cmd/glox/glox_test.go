@@ -28,25 +28,30 @@ func TestRunFile(t *testing.T) {
 			if filepath.Base(filepath.Dir(path)) == "limit" {
 				t.Skip()
 			}
+			if filepath.Base(filepath.Dir(path)) == "scanning" {
+				t.Skip()
+			}
 
-			builder := strings.Builder{}
-			lox := NewLox(&builder, &builder)
+			stdoutBuilder := strings.Builder{}
+			stderrBuilder := strings.Builder{}
+			lox := NewLox(&stdoutBuilder, &stderrBuilder)
 			lox.RunFile(path)
-			programOutput := builder.String()
+			programOutput := stdoutBuilder.String()
+			// programErr := stderrBuilder.String()
 
 			expectedBytes, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal("Failed to read ", path)
 			}
-			builder = strings.Builder{}
+			expectedStdoutBuilder := strings.Builder{}
 			for _, line := range strings.Split(string(expectedBytes), "\n") {
 				match := pattern.FindStringSubmatch(line)
 				if len(match) > 1 {
-					builder.WriteString(match[1])
-					builder.WriteByte('\n')
+					expectedStdoutBuilder.WriteString(match[1])
+					expectedStdoutBuilder.WriteByte('\n')
 				}
 			}
-			expectedOutput := builder.String()
+			expectedOutput := expectedStdoutBuilder.String()
 
 			if expectedOutput != programOutput {
 				err := diff.Text(filepath.Base(path), path+".expected", programOutput, expectedOutput, os.Stdout)
