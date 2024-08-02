@@ -1,2 +1,2 @@
-// [line 2] Error at 'fun': Expect expression.
+// error: {"line":2,"message":"expect expression","type":"ParseError"}
 for (;;) fun foo() {}

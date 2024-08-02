@@ -83,11 +83,11 @@ import (
 // arguments -> expression ( "," expression )*
 //
 
-func NewParser(errorReporter loxerror.ErrorReporter, tokens []lexer.Token) *Parser {
+func NewParser(errorFormatter loxerror.ErrorFormatter, tokens []lexer.Token) *Parser {
 	return &Parser{
-		errorReporter: errorReporter,
-		tokens:        tokens,
-		current:       0,
+		errorFormatter: errorFormatter,
+		tokens:         tokens,
+		current:        0,
 	}
 }
 
@@ -104,7 +104,7 @@ func (p *Parser) Parse() []ast.Statement {
 func (p *Parser) declaration() ast.Statement {
 	defer func() {
 		if r := recover(); r != nil {
-			if _, ok := r.(loxerror.ParserError); ok {
+			if _, ok := r.(*ParseError); ok {
 				p.synchronize()
 				return
 			}
@@ -149,7 +149,7 @@ func (p *Parser) function(kind string) ast.Statement {
 	if !p.check(lexer.RightParenthesis) {
 		for next := true; next; next = p.match(lexer.Comma) {
 			if len(parameters) >= ast.Limits.MaxArgs {
-				p.errorReporter.Error(p.peek().Line, "Can't have more than 255 parameters")
+				p.errorFormatter.PushError(NewParseError(p.peek().Line, "Can't have more than 255 parameters"))
 			}
 
 			parameters = append(parameters, p.consume(lexer.Identifier, "Expect parameter name"))
@@ -157,7 +157,7 @@ func (p *Parser) function(kind string) ast.Statement {
 	}
 
 	p.consume(lexer.RightParenthesis, "Expect ')' after parameters")
-	p.consume(lexer.LeftBrace, "Expect '{' after parameters")
+	p.consume(lexer.LeftBrace, "Function body must start with '{'")
 	body := p.block()
 
 	return ast.NewFunctionStatement(name, parameters, body)
@@ -328,7 +328,7 @@ func (p *Parser) assignment() ast.Expression {
 
 		// No need to go to put the parser in recovery mode
 		// TODO: better error message
-		p.errorReporter.Error(equalsToken.Line, "Invalid assignment target")
+		p.errorFormatter.PushError(NewParseError(equalsToken.Line, "Invalid assignment target"))
 
 		return nil
 	}
@@ -444,13 +444,13 @@ func (p *Parser) finishCall(callee ast.Expression) ast.Expression {
 	if !p.check(lexer.RightParenthesis) {
 		for next := true; next; next = p.match(lexer.Comma) {
 			if len(args) >= ast.Limits.MaxArgs {
-				p.errorReporter.Error(p.peek().Line, "Can't have more than 255 arguments")
+				p.errorFormatter.PushError(NewParseError(p.peek().Line, "Can't have more than 255 arguments"))
 			}
 			args = append(args, p.expression())
 		}
 	}
 
-	position := p.consume(lexer.RightParenthesis, "Execpect ')' after function arguments")
+	position := p.consume(lexer.RightParenthesis, "Expect ')' after function arguments")
 
 	return ast.NewCallExpression(callee, position, args)
 }
@@ -481,8 +481,9 @@ func (p *Parser) primary() ast.Expression {
 		p.consume(lexer.RightParenthesis, "Expect ')' after expression")
 		return ast.NewGroupingExpression(expr)
 	default:
-		p.errorReporter.Error(p.peek().Line, "expect expression")
-		panic(loxerror.ParserError{Message: "expect expression"})
+		err := NewParseError(p.peek().Line, "expect expression")
+		p.errorFormatter.PushError(err)
+		panic(err)
 	}
 }
 
@@ -530,17 +531,20 @@ func (p *Parser) consume(tokenType lexer.TokenType, message string) lexer.Token 
 		return p.advance()
 	}
 
-	p.errorReporter.Error(p.peek().Line, message)
-	panic(loxerror.ParserError{Message: message})
+	err := NewParseError(p.peek().Line, message)
+	p.errorFormatter.PushError(err)
+	panic(err)
 }
 
 func (p *Parser) synchronize() {
 	p.advance()
 
 	for !p.isAtEnd() {
-		switch p.previous().Type {
-		case lexer.Semicolon:
-			fallthrough
+		if p.previous().Type == lexer.Semicolon {
+			return
+		}
+
+		switch p.peek().Type {
 		case lexer.Class:
 			fallthrough
 		case lexer.Var:
@@ -562,7 +566,7 @@ func (p *Parser) synchronize() {
 }
 
 type Parser struct {
-	errorReporter loxerror.ErrorReporter
-	tokens        []lexer.Token
-	current       int
+	errorFormatter loxerror.ErrorFormatter
+	tokens         []lexer.Token
+	current        int
 }

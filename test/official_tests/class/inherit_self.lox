@@ -1,1 +1,1 @@
-class Foo < Foo {} // Error at 'Foo': A class can't inherit from itself.
+class Foo < Foo {} // error: {"line":1,"message":"A class can't inherit from itself","type":"RuntimeError"}

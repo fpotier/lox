@@ -1,3 +1,3 @@
-// [line 3] Error at '{': Expect expression.
-// [line 3] Error at ')': Expect ';' after expression.
+// error: {"line":3,"message":"expect expression","type":"ParseError"}
+// error: {"line":3,"message":"Expect ';' after value","type":"ParseError"}
 for ({}; a < 2; a = a + 1) {}

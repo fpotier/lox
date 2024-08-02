@@ -1,11 +1,8 @@
 package runtime
 
 import (
-	"fmt"
-
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
-	"github.com/fpotier/lox/go/pkg/loxerror"
 )
 
 type Environment struct {
@@ -41,7 +38,7 @@ func (e *Environment) Get(name lexer.Token) ast.LoxValue {
 		return e.enclosing.Get(name)
 	}
 
-	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
+	panic(NewUndefinedVariable(name.Line, name.Lexeme))
 }
 
 func (e *Environment) GetAt(distance int, name string) ast.LoxValue {
@@ -59,7 +56,7 @@ func (e *Environment) Assign(name lexer.Token, value ast.LoxValue) {
 		return
 	}
 
-	panic(loxerror.RuntimeError{Message: fmt.Sprintf("Undefined variable '%v'", name.Lexeme)})
+	panic(NewUndefinedVariable(name.Line, name.Lexeme))
 }
 
 func (e *Environment) AssignAt(distance int, name lexer.Token, value ast.LoxValue) {
