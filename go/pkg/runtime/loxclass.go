@@ -1,6 +1,10 @@
 package runtime
 
-import "github.com/fpotier/lox/go/pkg/ast"
+import (
+	"fmt"
+
+	"github.com/fpotier/lox/go/pkg/ast"
+)
 
 type LoxClass struct {
 	name       string
@@ -19,6 +23,7 @@ func NewLoxClass(name string, superclass *LoxClass, methods map[string]*LoxFunct
 func (c *LoxClass) Kind() ast.Kind             { return ast.Class }
 func (c *LoxClass) IsTruthy() bool             { return true }
 func (c *LoxClass) String() string             { return c.name }
+func (c *LoxClass) Name() string               { return fmt.Sprintf("%s::%s", c.name, c.name) }
 func (c *LoxClass) Equals(v ast.LoxValue) bool { return c == v }
 
 func (c *LoxClass) Call(i *Interpreter, arguments []ast.LoxValue) ast.LoxValue {

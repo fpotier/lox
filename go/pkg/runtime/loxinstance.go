@@ -3,7 +3,6 @@ package runtime
 import (
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
-	"github.com/fpotier/lox/go/pkg/loxerror"
 )
 
 type LoxInstance struct {
@@ -27,7 +26,7 @@ func (i *LoxInstance) Get(name lexer.Token) ast.LoxValue {
 		return method.Bind(i)
 	}
 
-	panic(loxerror.RuntimeError{Message: "Undefined property " + name.Lexeme})
+	panic(NewUndefinedProperty(name.Line, name.Lexeme, i.class.name))
 }
 
 func (i *LoxInstance) Set(name lexer.Token, value ast.LoxValue) {

@@ -1,1 +1,1 @@
-"str".foo = "value"; // expect runtime error: Only instances have fields.
+"str".foo = "value"; // error: {"line":1,"message":"Only class instances have properties","type":"RuntimeError"}

@@ -1,6 +1,6 @@
 class Base {
   foo() {
-    super.doesNotExist; // Error at 'super': Can't use 'super' in a class with no superclass.
+    super.doesNotExist; // error: {"line":3,"message":"Can't use 'super' in a class with no superclass","type":"RuntimeError"}
   }
 }
 

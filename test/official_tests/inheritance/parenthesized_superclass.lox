@@ -1,4 +1,4 @@
 class Foo {}
 
-// [line 4] Error at '(': Expect superclass name.
+// error: {"line":4,"message":"Expect superclass name","type":"ParseError"}
 class Bar < (Foo) {}

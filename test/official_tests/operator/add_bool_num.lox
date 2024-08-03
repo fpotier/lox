@@ -1,1 +1,1 @@
-true + 123; // expect runtime error: Operands must be two numbers or two strings.
+true + 123; // error: {"line":1,"message":"Operator '+': incompatible types 'boolean' and 'number'","type":"RuntimeError"}

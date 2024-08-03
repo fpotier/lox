@@ -1,7 +1,7 @@
 {
   fun isEven(n) {
     if (n == 0) return true;
-    return isOdd(n - 1); // expect runtime error: Undefined variable 'isOdd'.
+    return isOdd(n - 1); // error: {"line":4,"message":"Undefined variable 'isOdd'","type":"RuntimeError"}
   }
 
   fun isOdd(n) {

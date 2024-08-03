@@ -1,12 +1,15 @@
-name: golangci-lint
+name: go
 on:
   push:
+    branches:
+      - master
+  pull_request:
     branches:
       - master
 permissions:
   contents: read
 jobs:
-  golangci:
+  go:
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:
@@ -15,6 +18,18 @@ jobs:
         with:
           go-version: stable
           cache-dependency-path: go/go.sum
+      - name: Install dependencies
+        run: go mod tidy
+        working-directory: go
+      - name: Generate code
+        run: go generate ./...
+        working-directory: go
+      - name: Compile
+        run: go build -v ./...
+        working-directory: go
+      - name: Run tests
+        run: go test -v ./...
+        working-directory: go
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:

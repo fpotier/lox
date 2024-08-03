@@ -1,1 +1,1 @@
-"str"(); // expect runtime error: Can only call functions and classes.
+"str"(); // error: {"line":1,"message":"Only classes and functions are callable","type":"RuntimeError"}
