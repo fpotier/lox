@@ -239,7 +239,6 @@ func (p *Parser) forStatement() ast.Statement {
 	body := p.statement()
 
 	if increment != nil {
-		// Note: I think this creates a useless block
 		body = ast.NewBlockStatement([]ast.Statement{body, ast.NewExpressionStatement(increment)})
 	}
 

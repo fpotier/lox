@@ -92,6 +92,9 @@ func (l *Lox) run(sourceCode string) {
 		return
 	}
 
+	// printer := ast.NewAstPrinter(os.Stdout, 2)
+	// printer.Dump(statements)
+
 	l.resolver = runtime.NewResolver(l.errorFormatter, l.interpreter)
 	l.resolver.ResolveProgram(statements)
 	if l.errorFormatter.HasErrors() {

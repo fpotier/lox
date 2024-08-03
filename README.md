@@ -25,12 +25,12 @@ The test suite in `test/official_tests` comes from the [original implementation]
 | constructor          | :white_check_mark: |
 | field                | :white_check_mark: |
 | for                  | :white_check_mark: |
-| function             | :x:                |
+| function             | :white_check_mark: |
 | if                   | :white_check_mark: |
 | inheritance          | :white_check_mark: |
 | limit                | :x:                |
 | logical operator     | :white_check_mark: |
-| method               | :x:                |
+| method               | :white_check_mark: |
 | nil                  | :white_check_mark: |
 | number               | :x:                |
 | operator             | :white_check_mark: |
@@ -39,7 +39,7 @@ The test suite in `test/official_tests` comes from the [original implementation]
 | return               | :white_check_mark: |
 | scanning             | :white_check_mark: |
 | string               | :white_check_mark: |
-| super                | :x:                |
+| super                | :white_check_mark: |
 | this                 | :white_check_mark: |
 | variable             | :white_check_mark: |
 | while                | :white_check_mark: |

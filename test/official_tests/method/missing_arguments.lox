@@ -2,4 +2,4 @@ class Foo {
   method(a, b) {}
 }
 
-Foo().method(1); // error: {"line":5,"message":"Function 'Foo::method' expected 2 arguments but got 1","type":"RuntimeError"}
+Foo().method(1); // error: {"line":5,"message":"Function 'method' expected 2 arguments but got 1","type":"RuntimeError"}

@@ -7,7 +7,7 @@ class Base {
 class Derived < Base {
   foo() {
     print "Derived.foo()"; // expect: Derived.foo()
-    super.foo("a", "b", "c", "d"); // error: {"line":10,"message":"Function 'Base::foo' expected 2 arguments but got 4","type":"RuntimeError"}
+    super.foo("a", "b", "c", "d"); // error: {"line":10,"message":"Function 'foo' expected 2 arguments but got 4","type":"RuntimeError"}
   }
 }
 

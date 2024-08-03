@@ -96,12 +96,14 @@ func checkRunOutput(filename string, diffOutput io.Writer) error {
 	programOutput := stdoutBuilder.String()
 	programErr := stderrBuilder.String()
 
-	expectedBytes, err := os.ReadFile(filename)
+	rawFileContent, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
+	// Required when files use CRLF or CR instead of LF (Go doesn't convert when reading)
+	fileContent := strings.ReplaceAll(string(rawFileContent), "\r", "")
 	expectedStdoutBuilder := strings.Builder{}
-	for _, line := range strings.Split(string(expectedBytes), "\n") {
+	for _, line := range strings.Split(fileContent, "\n") {
 		match := outputPattern.FindStringSubmatch(line)
 		if len(match) > 1 {
 			expectedStdoutBuilder.WriteString(match[1])
@@ -117,7 +119,7 @@ func checkRunOutput(filename string, diffOutput io.Writer) error {
 	}
 
 	expectedStderrBuilder := strings.Builder{}
-	for _, line := range strings.Split(string(expectedBytes), "\n") {
+	for _, line := range strings.Split(fileContent, "\n") {
 		match := errorPattern.FindStringSubmatch(line)
 		if len(match) > 1 {
 			expectedStderrBuilder.WriteString(match[1])
