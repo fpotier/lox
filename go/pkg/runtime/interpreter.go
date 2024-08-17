@@ -17,6 +17,8 @@ type Interpreter struct {
 	HadRuntimeError bool
 	ErrorFormatter  loxerror.ErrorFormatter
 	OutputStream    io.Writer
+	hasReturned     bool
+	frameNumber     int
 	globals         *Environment
 	environment     *Environment
 	locals          map[ast.Expression]int
@@ -28,6 +30,7 @@ func NewInterpreter(outputStream io.Writer, errorFormatter loxerror.ErrorFormatt
 		HadRuntimeError: false,
 		ErrorFormatter:  errorFormatter,
 		OutputStream:    outputStream,
+		hasReturned:     false,
 		globals:         NewEnvironment(),
 		environment:     nil,
 		locals:          make(map[ast.Expression]int),
@@ -128,7 +131,9 @@ func (i *Interpreter) VisitCallExpression(callExpression *ast.CallExpression) {
 		if function.Arity() != len(arguments) {
 			panic(NewBadArity(callExpression.Position.Line, function.Name(), function.Arity(), len(arguments)))
 		}
+		i.frameNumber++
 		i.Value = function.Call(i, arguments)
+		i.frameNumber--
 	} else {
 		panic(NewNotCallable(callExpression.Position.Line))
 	}
@@ -271,12 +276,12 @@ func (i *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
 }
 
 func (i *Interpreter) VisitReturnStatement(returnStatement *ast.ReturnStatement) {
-	var value ast.LoxValue = ast.NewNilValue()
+	i.hasReturned = true
 	if returnStatement.Value != nil {
-		value = i.evaluate(returnStatement.Value)
+		i.Value = i.evaluate(returnStatement.Value)
+	} else {
+		i.Value = ast.NewNilValue()
 	}
-
-	panic(value)
 }
 
 func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStatement) {
@@ -289,7 +294,7 @@ func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStat
 }
 
 func (i *Interpreter) VisitWhileStatement(whileStatement *ast.WhileStatement) {
-	for i.evaluate(whileStatement.Condition).IsTruthy() {
+	for i.evaluate(whileStatement.Condition).IsTruthy() && !(i.frameNumber > 0 && i.hasReturned) {
 		i.execute(whileStatement.Body)
 	}
 }
@@ -298,12 +303,9 @@ func (i *Interpreter) executeBlock(statements []ast.Statement, subEnvironment *E
 	previousEnv := i.environment
 	i.environment = subEnvironment
 	defer func() { i.environment = previousEnv }()
-	// TODO error handling
-	for _, statement := range statements {
-		i.execute(statement)
+	for index := 0; index < len(statements) && !(i.frameNumber > 0 && i.hasReturned); index++ {
+		i.execute(statements[index])
 	}
-
-	i.environment = previousEnv
 }
 
 func (i *Interpreter) execute(statement ast.Statement) {
