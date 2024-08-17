@@ -3,7 +3,15 @@ on:
   push:
     branches:
       - master
+    paths:
+      - go
+      - benchmark
+      - test
   pull_request:
+    paths:
+      - go
+      - benchmark
+      - test
 jobs:
   lint:
     name: lint
