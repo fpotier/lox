@@ -4,11 +4,9 @@ on:
     branches:
       - master
   pull_request:
-permissions:
-  contents: read
 jobs:
   lint:
-    name: go-lint
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,13 +23,13 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          install-mode: "goinstall"
-          version: v1.59
+          install-mode: goinstall
+          version: latest
           working-directory: go
           args: --config="${GITHUB_WORKSPACE}/go/.golangci.yaml"
 
   test:
-    name: go-test
+    name: test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,3 +53,39 @@ jobs:
 
       - name: Run tests
         run: go test -v ./...
+
+  benchmark:
+    name: benchmark
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go.sum
+
+      - name: Generate code
+        run: go generate ./...
+
+      - name: Run benchmark
+        run: go test ./cmd/glox -bench=. -count 5 -run=^# -timeout 30m | tee output.txt
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v4
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: go/output.txt
+          external-data-json-path: ./cache/benchmark-data.json
+          fail-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-on-alert: true

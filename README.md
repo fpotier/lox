@@ -15,7 +15,7 @@ The test suite in `test/official_tests` comes from the [original implementation]
 | Feature              | Implementation     |
 | -------------------- | ------------------ |
 | assignment           | :white_check_mark: |
-| benchmark            | :x:                |
+| benchmark            | :white_check_mark: |
 | block                | :white_check_mark: |
 | bool                 | :white_check_mark: |
 | call                 | :white_check_mark: |

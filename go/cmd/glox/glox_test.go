@@ -12,6 +12,7 @@ import (
 )
 
 const TestDirectory = "../../../test/official_tests"
+const BenchmarkDirectory = "../../../benchmark/official_benchmarks"
 
 var testedDirectories = [...]string{
 	".",
@@ -63,6 +64,10 @@ func TestRunFile(t *testing.T) {
 	}
 }
 
+func BenchmarkRunFile(b *testing.B) {
+	runFilesInDirBench(b, BenchmarkDirectory)
+}
+
 func runFilesInDir(t *testing.T, dirPath string) {
 	t.Helper()
 	loxFiles, err := loxFilesInDir(dirPath)
@@ -80,6 +85,28 @@ func runFilesInDir(t *testing.T, dirPath string) {
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func runFilesInDirBench(b *testing.B, dirPath string) {
+	b.Helper()
+	loxFiles, err := loxFilesInDir(dirPath)
+	if err != nil || len(loxFiles) == 0 {
+		b.Logf("No .lox files in %s", dirPath)
+		b.Skip()
+	}
+
+	for _, file := range loxFiles {
+		b.Run(file, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				var (
+					stdoutBuilder = strings.Builder{}
+					stderrBuilder = strings.Builder{}
+				)
+				lox := NewLox(&stdoutBuilder, &stderrBuilder)
+				lox.RunFile(file)
 			}
 		})
 	}
