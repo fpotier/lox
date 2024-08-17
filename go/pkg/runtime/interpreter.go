@@ -1,9 +1,10 @@
+//go:generate go run ../../cmd/code-generator runtime
+
 package runtime
 
 import (
 	"fmt"
 	"io"
-	"reflect"
 
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
@@ -14,18 +15,18 @@ type Interpreter struct {
 	// Value can be virtually anything (string, number, boolean, object, nil, etc.)
 	Value           ast.LoxValue
 	HadRuntimeError bool
-	ErrorReporter   loxerror.ErrorReporter
+	ErrorFormatter  loxerror.ErrorFormatter
 	OutputStream    io.Writer
 	globals         *Environment
 	environment     *Environment
 	locals          map[ast.Expression]int
 }
 
-func NewInterpreter(outputStream io.Writer, errorReporter loxerror.ErrorReporter) *Interpreter {
+func NewInterpreter(outputStream io.Writer, errorFormatter loxerror.ErrorFormatter) *Interpreter {
 	i := Interpreter{
 		Value:           ast.NewNilValue(),
 		HadRuntimeError: false,
-		ErrorReporter:   errorReporter,
+		ErrorFormatter:  errorFormatter,
 		OutputStream:    outputStream,
 		globals:         NewEnvironment(),
 		environment:     nil,
@@ -45,10 +46,10 @@ func (i *Interpreter) Eval(statements []ast.Statement) {
 	// without changing the Visit...() methods to return an error and propagate manually these errors
 	defer func() {
 		if r := recover(); r != nil {
-			if err, ok := r.(loxerror.RuntimeError); ok {
+			if err, ok := r.(loxerror.LoxError); ok {
 				i.HadRuntimeError = true
 				// TODO: better runtime error messages
-				i.ErrorReporter.Error(0, err.Message)
+				i.ErrorFormatter.PushError(err)
 				return
 			}
 			panic(r)
@@ -82,13 +83,10 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpressi
 		case lhs.Kind() == ast.String && rhs.Kind() == ast.String:
 			i.Value = ast.NewStringValue(lhs.(*ast.StringValue).Value + rhs.(*ast.StringValue).Value)
 		default:
-			// TODO: print lox types instead of go types
-			panic(loxerror.RuntimeError{
-				Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v",
-					binaryExpression.Operator.Lexeme,
-					reflect.TypeOf(lhs),
-					reflect.TypeOf(rhs)),
-			})
+			panic(NewUnsupportedBinaryOperation(binaryExpression.Operator.Line,
+				binaryExpression.Operator.Lexeme,
+				ast.KindString[lhs.Kind()],
+				ast.KindString[rhs.Kind()]))
 		}
 	case lexer.Dash:
 		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
@@ -128,13 +126,11 @@ func (i *Interpreter) VisitCallExpression(callExpression *ast.CallExpression) {
 
 	if function, ok := callee.(LoxCallable); ok {
 		if function.Arity() != len(arguments) {
-			panic(loxerror.RuntimeError{
-				Message: fmt.Sprintf("Expected %d arguments but got %d", function.Arity(), len(arguments)),
-			})
+			panic(NewBadArity(callExpression.Position.Line, function.Name(), function.Arity(), len(arguments)))
 		}
 		i.Value = function.Call(i, arguments)
 	} else {
-		panic(loxerror.RuntimeError{Message: "Can only call functions and classes"})
+		panic(NewNotCallable(callExpression.Position.Line))
 	}
 }
 
@@ -145,7 +141,7 @@ func (i *Interpreter) VisitGetExpression(getExpression *ast.GetExpression) {
 		return
 	}
 
-	panic(loxerror.RuntimeError{Message: "Only instances have properties"})
+	panic(NewInvalidSetGet(getExpression.Name.Line))
 }
 
 func (i *Interpreter) VisitGroupingExpression(groupingExpression *ast.GroupingExpression) {
@@ -178,7 +174,8 @@ func (i *Interpreter) VisitSetExpression(setExpression *ast.SetExpression) {
 
 		return
 	}
-	panic(loxerror.RuntimeError{Message: "Only instances have fields"})
+
+	panic(NewInvalidSetGet(setExpression.Name.Line))
 }
 
 func (i *Interpreter) VisitSuperExpression(superExpression *ast.SuperExpression) {
@@ -187,7 +184,7 @@ func (i *Interpreter) VisitSuperExpression(superExpression *ast.SuperExpression)
 	this := i.environment.GetAt(distance-1, "this").(*LoxInstance)
 	method, ok := superclass.findMethod(superExpression.Method.Lexeme)
 	if !ok {
-		panic(loxerror.RuntimeError{Message: "Undefined property" + superExpression.Method.Lexeme})
+		panic(NewUndefinedProperty(superExpression.Method.Line, superExpression.Keyword.Lexeme, superclass.String()))
 	}
 
 	i.Value = method.Bind(this)
@@ -224,7 +221,7 @@ func (i *Interpreter) VisitClassStatement(classStatement *ast.ClassStatement) {
 		var ok bool
 		superclass, ok = result.(*LoxClass)
 		if !ok {
-			panic(loxerror.RuntimeError{Message: "Superclass must be a class"})
+			panic(NewInvalidInheritance(classStatement.Superclass.Name.Line, "Superclass must be a class"))
 		}
 	}
 
@@ -237,7 +234,9 @@ func (i *Interpreter) VisitClassStatement(classStatement *ast.ClassStatement) {
 
 	methods := make(map[string]*LoxFunction)
 	for _, method := range classStatement.Methods {
-		methods[method.Name.Lexeme] = NewLoxFunction(method, i.environment, method.Name.Lexeme == "init")
+		function := NewLoxFunction(method, i.environment, method.Name.Lexeme == "init")
+		function.setClassName(classStatement.Name.Lexeme)
+		methods[method.Name.Lexeme] = function
 	}
 
 	class := NewLoxClass(classStatement.Name.Lexeme, superclass, methods)
@@ -272,7 +271,7 @@ func (i *Interpreter) VisitPrintStatement(printStatement *ast.PrintStatement) {
 }
 
 func (i *Interpreter) VisitReturnStatement(returnStatement *ast.ReturnStatement) {
-	var value ast.LoxValue
+	var value ast.LoxValue = ast.NewNilValue()
 	if returnStatement.Value != nil {
 		value = i.evaluate(returnStatement.Value)
 	}
@@ -334,21 +333,19 @@ func (i *Interpreter) lookupVariable(name lexer.Token, e ast.Expression) ast.Lox
 
 func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxValue) {
 	if !(lhs.Kind() == ast.Number) || !(rhs.Kind() == ast.Number) {
-		panic(loxerror.RuntimeError{
-			// TODO: print lox types instead of go types
-			Message: fmt.Sprintf("Operator '%v': incompatible types %v and %v",
+		panic(
+			NewUnsupportedBinaryOperation(
+				operator.Line,
 				operator.Lexeme,
-				reflect.TypeOf(lhs),
-				reflect.TypeOf(rhs)),
-		})
+				ast.KindString[lhs.Kind()],
+				ast.KindString[rhs.Kind()],
+			),
+		)
 	}
 }
 
 func assertNumberOperand(operator lexer.Token, rhs ast.LoxValue) {
 	if !(rhs.Kind() == ast.Number) {
-		panic(loxerror.RuntimeError{
-			// TODO: print lox types instead of go types
-			Message: fmt.Sprintf("Operator '%v': incompatible type %v", operator.Lexeme, reflect.TypeOf(rhs)),
-		})
+		panic(NewUnsupportedUnaryOperation(operator.Line, operator.Lexeme, ast.KindString[rhs.Kind()]))
 	}
 }

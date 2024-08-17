@@ -1,5 +1,5 @@
 class Foo {
   init() {
-    return "result"; // Error at 'return': Can't return a value from an initializer.
+    return "result"; // error: {"line":3,"message":"Can't return from constructor","type":"RuntimeError"}
   }
 }

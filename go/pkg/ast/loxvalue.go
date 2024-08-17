@@ -18,6 +18,17 @@ const (
 	Instance
 )
 
+var KindString = map[Kind]string{
+	Boolean:    "boolean",
+	String:     "string",
+	Number:     "number",
+	Nil:        "nil",
+	NativeFunc: "native function",
+	Function:   "function",
+	Class:      "class",
+	Instance:   "instance",
+}
+
 type LoxValue interface {
 	Kind() Kind
 	IsTruthy() bool

@@ -1,1 +1,1 @@
-123.foo; // expect runtime error: Only instances have properties.
+123.foo; // error: {"line":1,"message":"Only class instances have properties","type":"RuntimeError"}

@@ -1,0 +1,38 @@
+package {{ .Package }}
+
+{{- if eq (len .Imports) 1 }}
+import "{{ index .Imports 0 }}"
+{{- else }}
+import (
+	{{- range .Imports }}
+	"{{ . }}"
+	{{- end }}
+)
+{{- end }}
+
+{{ range .Types}}
+type {{ .Name }} struct {
+	line int
+	{{ range .Fields }}{{ .Name }} {{ .Type }}
+	{{ end }}
+}
+
+func New{{ .Name }}(line int{{ range .Fields }}, {{ .Name }} {{ .Type }}{{ end }}) *{{ .Name }} {
+	return &{{ .Name }}{
+		line: line,
+		{{ range .Fields }}{{ .Name }}: {{ .Name }}, {{ end }}
+	}
+}
+
+func (e {{ .Name }}) Line() int {
+	return e.line
+}
+
+func (e {{ .Name }}) Kind() string {
+	return "{{ $.ErrorKind }}"
+}
+
+func (e {{ .Name }}) Message() string {
+	return fmt.Sprintf("{{ .Message }}", {{ range .Fields }}e.{{ .Name }}, {{ end }})
+}
+{{ end }}

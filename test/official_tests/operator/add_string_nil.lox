@@ -1,1 +1,1 @@
-"s" + nil; // expect runtime error: Operands must be two numbers or two strings.
+"s" + nil; // error: {"line":1,"message":"Operator '+': incompatible types 'string' and 'nil'","type":"RuntimeError"}

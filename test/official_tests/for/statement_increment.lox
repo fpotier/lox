@@ -1,2 +1,2 @@
-// [line 2] Error at '{': Expect expression.
+// error: {"line":2,"message":"expect expression","type":"ParseError"}
 for (var a = 1; a < 2; {}) {}

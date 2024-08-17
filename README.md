@@ -14,37 +14,37 @@ The test suite in `test/official_tests` comes from the [original implementation]
 
 | Feature              | Implementation     |
 | -------------------- | ------------------ |
-| assignment           | :x:                |
-| benchmark            | :x:                |
+| assignment           | :white_check_mark: |
+| benchmark            | :white_check_mark: |
 | block                | :white_check_mark: |
 | bool                 | :white_check_mark: |
-| call                 | :x:                |
-| class                | :x:                |
-| closure              | :x:                |
+| call                 | :white_check_mark: |
+| class                | :white_check_mark: |
+| closure              | :white_check_mark: |
 | comments             | :white_check_mark: |
-| constructor          | :x:                |
-| field                | :x:                |
-| for                  | :x:                |
-| function             | :x:                |
-| if                   | :x:                |
-| inheritance          | :x:                |
+| constructor          | :white_check_mark: |
+| field                | :white_check_mark: |
+| for                  | :white_check_mark: |
+| function             | :white_check_mark: |
+| if                   | :white_check_mark: |
+| inheritance          | :white_check_mark: |
 | limit                | :x:                |
 | logical operator     | :white_check_mark: |
-| method               | :x:                |
+| method               | :white_check_mark: |
 | nil                  | :white_check_mark: |
 | number               | :x:                |
-| operator             | :x:                |
-| print                | :x:                |
-| regression           | :x:                |
-| return               | :x:                |
-| scanning             | :x:                |
-| string               | :x:                |
-| super                | :x:                |
-| this                 | :x:                |
-| variable             | :x:                |
-| while                | :x:                |
+| operator             | :white_check_mark: |
+| print                | :white_check_mark: |
+| regression           | :white_check_mark: |
+| return               | :white_check_mark: |
+| scanning             | :white_check_mark: |
+| string               | :white_check_mark: |
+| super                | :white_check_mark: |
+| this                 | :white_check_mark: |
+| variable             | :white_check_mark: |
+| while                | :white_check_mark: |
 | empty file           | :white_check_mark: |
 | precedence           | :white_check_mark: |
-| unexpected character | :x:                |
+| unexpected character | :white_check_mark: |
 
 </details>

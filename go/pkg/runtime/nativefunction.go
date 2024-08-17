@@ -16,6 +16,7 @@ type NativeFunction struct {
 func (f NativeFunction) Kind() ast.Kind             { return ast.NativeFunc }
 func (f NativeFunction) IsTruthy() bool             { return true }
 func (f NativeFunction) String() string             { return "<native fn>" }
+func (f NativeFunction) Name() string               { return f.name }
 func (f NativeFunction) Equals(_ ast.LoxValue) bool { return false }
 func (f NativeFunction) Call(i *Interpreter, arguments []ast.LoxValue) ast.LoxValue {
 	return f.code(i, arguments)

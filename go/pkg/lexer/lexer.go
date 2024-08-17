@@ -1,29 +1,30 @@
+//go:generate go run ../../cmd/code-generator lexer
+
 package lexer
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/fpotier/lox/go/pkg/loxerror"
 )
 
 type Lexer struct {
-	errorReporter loxerror.ErrorReporter
-	sourceCode    string
-	tokens        []Token
-	start         int
-	current       int
-	line          int
+	ErrorFormatter loxerror.ErrorFormatter
+	sourceCode     string
+	tokens         []Token
+	start          int
+	current        int
+	line           int
 }
 
-func NewLexer(errorReporter loxerror.ErrorReporter, sourceCode string) *Lexer {
+func NewLexer(errorFormatter loxerror.ErrorFormatter, sourceCode string) *Lexer {
 	return &Lexer{
-		errorReporter: errorReporter,
-		sourceCode:    sourceCode,
-		tokens:        make([]Token, 0),
-		start:         0,
-		current:       0,
-		line:          1,
+		ErrorFormatter: errorFormatter,
+		sourceCode:     sourceCode,
+		tokens:         make([]Token, 0),
+		start:          0,
+		current:        0,
+		line:           1,
 	}
 }
 
@@ -115,7 +116,7 @@ func (l *Lexer) scanToken() {
 		case isAlpha(c):
 			l.identifier()
 		default:
-			l.errorReporter.Error(l.line, fmt.Sprintf("Unexpected character '%c'", c))
+			l.ErrorFormatter.PushError(NewUnexpectedCharacter(l.line, c))
 		}
 	}
 }
@@ -180,7 +181,7 @@ func (l *Lexer) string() {
 	}
 
 	if l.isAtEnd() {
-		l.errorReporter.Error(l.line, "Unterminated string")
+		l.ErrorFormatter.PushError(NewUnterminatedString(l.line))
 		return
 	}
 
@@ -206,8 +207,7 @@ func (l *Lexer) number() {
 
 	floatValue, err := strconv.ParseFloat(l.sourceCode[l.start:l.current], 64)
 	if err != nil {
-		l.errorReporter.Error(l.line,
-			fmt.Sprintf("Error converting %v to float: %v", l.sourceCode[l.start:l.current], err))
+		l.ErrorFormatter.PushError(NewInvalidFloat(l.line, l.sourceCode[l.start:l.current]))
 		return
 	}
 	l.addTokenWithLiteral(Number, &NumberLiteral{Value: floatValue})

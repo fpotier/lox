@@ -1,8 +1,6 @@
 package runtime
 
 import (
-	"fmt"
-
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
 	"github.com/fpotier/lox/go/pkg/loxerror"
@@ -26,16 +24,16 @@ const (
 )
 
 type Resolver struct {
-	errorReporter    loxerror.ErrorReporter
+	errorFormatter   loxerror.ErrorFormatter
 	interpreter      *Interpreter
 	scopes           []map[string]bool
 	currentFnType    FunctionType
 	currentClassType ClassType
 }
 
-func NewResolver(errorReporter loxerror.ErrorReporter, i *Interpreter) *Resolver {
+func NewResolver(errorFormatter loxerror.ErrorFormatter, i *Interpreter) *Resolver {
 	r := Resolver{
-		errorReporter:    errorReporter,
+		errorFormatter:   errorFormatter,
 		interpreter:      i,
 		scopes:           make([]map[string]bool, 0),
 		currentFnType:    NoFunc,
@@ -91,9 +89,9 @@ func (r *Resolver) VisitSetExpression(e *ast.SetExpression) {
 
 func (r *Resolver) VisitSuperExpression(e *ast.SuperExpression) {
 	if r.currentClassType == NoClass {
-		r.errorReporter.Error(e.Keyword.Line, "Can't use 'super' outside of a class")
+		r.errorFormatter.PushError(NewInvalidSuper(e.Keyword.Line, "outside of a class"))
 	} else if r.currentClassType != InSubClass {
-		r.errorReporter.Error(e.Keyword.Line, "Can't use 'super' in a class with no superclass")
+		r.errorFormatter.PushError(NewInvalidSuper(e.Keyword.Line, "in a class with no superclass"))
 	}
 
 	r.resolveLocal(e, e.Keyword)
@@ -101,7 +99,7 @@ func (r *Resolver) VisitSuperExpression(e *ast.SuperExpression) {
 
 func (r *Resolver) VisitThisExpression(e *ast.ThisExpression) {
 	if r.currentClassType == NoClass {
-		r.errorReporter.Error(e.Keyword.Line, "Can't use 'this' outside of a class")
+		r.errorFormatter.PushError(NewInvalidThis(e.Keyword.Line, "outside of a class"))
 	}
 
 	r.resolveLocal(e, e.Keyword)
@@ -114,7 +112,7 @@ func (r *Resolver) VisitUnaryExpression(e *ast.UnaryExpression) {
 func (r *Resolver) VisitVariableExpression(e *ast.VariableExpression) {
 	if len(r.scopes) > 0 {
 		if declared, ok := r.scopes[len(r.scopes)-1][e.Name.Lexeme]; ok && !declared {
-			r.errorReporter.Error(e.Name.Line, "Can't read local variable in its own initializer")
+			r.errorFormatter.PushError(NewUninitializedRead(e.Name.Line))
 		}
 	}
 
@@ -139,7 +137,7 @@ func (r *Resolver) VisitClassStatement(s *ast.ClassStatement) {
 	if s.Superclass != nil {
 		r.currentClassType = InSubClass
 		if s.Name.Lexeme == s.Superclass.Name.Lexeme {
-			r.errorReporter.Error(s.Superclass.Name.Line, "A class can't inherit from itself")
+			r.errorFormatter.PushError(NewInvalidInheritance(s.Superclass.Name.Line, "A class can't inherit from itself"))
 		}
 		r.resolveExpression(s.Superclass)
 
@@ -190,12 +188,12 @@ func (r *Resolver) VisitPrintStatement(s *ast.PrintStatement) {
 
 func (r *Resolver) VisitReturnStatement(s *ast.ReturnStatement) {
 	if r.currentFnType == NoFunc {
-		r.errorReporter.Error(s.Keyword.Line, "Can't return from top-level code")
+		r.errorFormatter.PushError(NewInvalidReturn(s.Keyword.Line, "top-level code"))
 	}
 
 	if s.Value != nil {
 		if r.currentFnType == Constructor {
-			r.errorReporter.Error(s.Keyword.Line, "Can't return from constructor")
+			r.errorFormatter.PushError(NewInvalidReturn(s.Keyword.Line, "constructor"))
 		}
 
 		r.resolveExpression(s.Value)
@@ -250,7 +248,7 @@ func (r *Resolver) endScope()   { r.scopes = r.scopes[:len(r.scopes)-1] }
 func (r *Resolver) declare(name lexer.Token) {
 	if len(r.scopes) > 0 {
 		if _, ok := r.scopes[len(r.scopes)-1][name.Lexeme]; ok {
-			r.errorReporter.Error(name.Line, fmt.Sprintf("Variable '%s' already declared in this scope", name.Lexeme))
+			r.errorFormatter.PushError(NewVariableRedeclaration(name.Line, name.Lexeme))
 		}
 		r.scopes[len(r.scopes)-1][name.Lexeme] = false
 	}
