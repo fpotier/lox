@@ -33,36 +33,23 @@ func (f LoxFunction) Equals(v ast.LoxValue) bool {
 	}
 	return false
 }
+
 func (f LoxFunction) Call(i *Interpreter, arguments []ast.LoxValue) (returnValue ast.LoxValue) {
 	environment := NewSubEnvironment(f.Closure)
 	for i := range f.Declaration.Parameters {
 		environment.Define(f.Declaration.Parameters[i].Lexeme, arguments[i])
 	}
 
-	// If no return statement is executed 'nil' is returned
-	returnValue = ast.NewNilValue()
-
-	defer func() {
-		if r := recover(); r != nil {
-			if rt, ok := r.(ast.LoxValue); ok {
-				if f.isConstructor {
-					returnValue = f.Closure.GetAt(0, "this")
-				} else {
-					returnValue = rt
-				}
-				return
-			}
-			panic(r)
-		}
-	}()
-
+	hasReturned := i.hasReturned
+	i.hasReturned = false
 	i.executeBlock(f.Declaration.Body, environment)
+	i.hasReturned = hasReturned
 
 	if f.isConstructor {
 		return f.Closure.GetAt(0, "this")
 	}
 
-	return returnValue
+	return i.Value
 }
 func (f LoxFunction) Arity() int { return len(f.Declaration.Parameters) }
 
