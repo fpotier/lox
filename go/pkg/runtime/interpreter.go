@@ -31,6 +31,7 @@ func NewInterpreter(outputStream io.Writer, errorFormatter loxerror.ErrorFormatt
 		ErrorFormatter:  errorFormatter,
 		OutputStream:    outputStream,
 		hasReturned:     false,
+		frameNumber:     0,
 		globals:         NewEnvironment(),
 		environment:     nil,
 		locals:          make(map[ast.Expression]int),
