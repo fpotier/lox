@@ -1,9 +1,9 @@
 package loxerror
 
 type ErrorFormatter interface {
-	PushError(LoxError)
+	PushError(loxError LoxError)
 	PopError() (LoxError, error)
-	Format(LoxError) string
+	Format(loxerror LoxError) string
 	HasErrors() bool
 	Reset()
 }

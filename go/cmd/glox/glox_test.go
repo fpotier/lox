@@ -45,10 +45,11 @@ var testedDirectories = [...]string{
 }
 
 func loxFilesInDir(path string) ([]string, error) {
-	return filepath.Glob(filepath.Join(path + "/*.lox"))
+	return filepath.Glob(filepath.Join(path, "/*.lox"))
 }
 
 func TestRunFile(t *testing.T) {
+	t.Parallel()
 	for _, dir := range testedDirectories {
 		absolutePath, err := filepath.Abs(TestDirectory + "/" + dir)
 		if err != nil {
@@ -56,13 +57,14 @@ func TestRunFile(t *testing.T) {
 		}
 
 		t.Run(dir, func(t *testing.T) {
+			t.Parallel()
 			runFilesInDir(t, absolutePath)
 		})
 	}
-
 }
 
 func runFilesInDir(t *testing.T, dirPath string) {
+	t.Helper()
 	loxFiles, err := loxFilesInDir(dirPath)
 	if err != nil || len(loxFiles) == 0 {
 		t.Logf("No .lox files in %s", dirPath)

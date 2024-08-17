@@ -34,7 +34,7 @@ func NewLox(fds ...io.Writer) *Lox {
 		interpreter:    nil,
 		stdout:         os.Stdout,
 		stderr:         os.Stderr,
-		errorFormatter: loxerror.NewJsonErrorFormatter(),
+		errorFormatter: loxerror.NewJSONErrorFormatter(),
 	}
 	for i, fd := range fds {
 		switch i {

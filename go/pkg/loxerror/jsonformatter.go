@@ -4,25 +4,28 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
-type JsonErrorFormatter struct {
+var ErrEmptyErrorStack = errors.New("empty error stack")
+
+type JSONErrorFormatter struct {
 	errors []LoxError
 }
 
-func NewJsonErrorFormatter() *JsonErrorFormatter {
-	return &JsonErrorFormatter{
+func NewJSONErrorFormatter() *JSONErrorFormatter {
+	return &JSONErrorFormatter{
 		errors: make([]LoxError, 0),
 	}
 }
 
-func (f *JsonErrorFormatter) PushError(e LoxError) {
+func (f *JSONErrorFormatter) PushError(e LoxError) {
 	f.errors = append(f.errors, e)
 }
 
-func (f *JsonErrorFormatter) PopError() (LoxError, error) {
+func (f *JSONErrorFormatter) PopError() (LoxError, error) {
 	if !f.HasErrors() {
-		return nil, errors.New("empty error stack")
+		return nil, ErrEmptyErrorStack
 	}
 
 	err := f.errors[0]
@@ -30,24 +33,24 @@ func (f *JsonErrorFormatter) PopError() (LoxError, error) {
 	return err, nil
 }
 
-func (f *JsonErrorFormatter) HasErrors() bool {
+func (f *JSONErrorFormatter) HasErrors() bool {
 	return len(f.errors) > 0
 }
 
-func (f *JsonErrorFormatter) Format(e LoxError) string {
-	raw_string, err := MarshalJSON(e)
+func (f *JSONErrorFormatter) Format(e LoxError) string {
+	rawString, err := MarshalJSON(e)
 	if err != nil {
 		panic(err)
 	}
 
-	return string(raw_string)
+	return string(rawString)
 }
 
-func (f *JsonErrorFormatter) Errors() []LoxError {
+func (f *JSONErrorFormatter) Errors() []LoxError {
 	return f.errors
 }
 
-func (f *JsonErrorFormatter) Reset() {
+func (f *JSONErrorFormatter) Reset() {
 	f.errors = f.errors[:0]
 }
 
@@ -61,7 +64,7 @@ func MarshalJSON[T LoxError](e T) ([]byte, error) {
 		"type":    e.Kind(),
 		"message": e.Message(),
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encode the error message: %w", err)
 	}
 
 	return buffer.Bytes(), nil

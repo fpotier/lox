@@ -333,7 +333,14 @@ func (i *Interpreter) lookupVariable(name lexer.Token, e ast.Expression) ast.Lox
 
 func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxValue) {
 	if !(lhs.Kind() == ast.Number) || !(rhs.Kind() == ast.Number) {
-		panic(NewUnsupportedBinaryOperation(operator.Line, operator.Lexeme, ast.KindString[lhs.Kind()], ast.KindString[rhs.Kind()]))
+		panic(
+			NewUnsupportedBinaryOperation(
+				operator.Line,
+				operator.Lexeme,
+				ast.KindString[lhs.Kind()],
+				ast.KindString[rhs.Kind()],
+			),
+		)
 	}
 }
 

@@ -6,27 +6,29 @@ import (
 	"strings"
 )
 
-type AstPrinter struct {
+const DefaultTabSize = 2
+
+type Printer struct {
 	output          io.Writer
-	identationLevel int
-	tabSize         int
+	identationLevel uint
+	tabSize         uint
 }
 
-func NewAstPrinter(outputStream io.Writer, tabSize uint) AstPrinter {
-	return AstPrinter{
+func NewAstPrinter(outputStream io.Writer, tabSize uint) Printer {
+	return Printer{
 		output:          outputStream,
 		identationLevel: 0,
-		tabSize:         2,
+		tabSize:         tabSize,
 	}
 }
 
-func (astPrinter *AstPrinter) Dump(statements []Statement) {
+func (astPrinter *Printer) Dump(statements []Statement) {
 	for _, statement := range statements {
 		statement.Accept(astPrinter)
 	}
 }
 
-func (astPrinter *AstPrinter) VisitAssignmentExpression(assignementExpression *AssignmentExpression) {
+func (astPrinter *Printer) VisitAssignmentExpression(assignementExpression *AssignmentExpression) {
 	astPrinter.write("AssignmentExpression")
 	astPrinter.identationLevel++
 
@@ -42,7 +44,7 @@ func (astPrinter *AstPrinter) VisitAssignmentExpression(assignementExpression *A
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitBinaryExpression(binaryExpression *BinaryExpression) {
+func (astPrinter *Printer) VisitBinaryExpression(binaryExpression *BinaryExpression) {
 	astPrinter.write("BinaryExpression")
 	astPrinter.identationLevel++
 
@@ -61,7 +63,7 @@ func (astPrinter *AstPrinter) VisitBinaryExpression(binaryExpression *BinaryExpr
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitCallExpression(callExpression *CallExpression) {
+func (astPrinter *Printer) VisitCallExpression(callExpression *CallExpression) {
 	astPrinter.write("CallExpression")
 	astPrinter.identationLevel++
 
@@ -77,7 +79,7 @@ func (astPrinter *AstPrinter) VisitCallExpression(callExpression *CallExpression
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitGetExpression(getExpression *GetExpression) {
+func (astPrinter *Printer) VisitGetExpression(getExpression *GetExpression) {
 	astPrinter.write("GetExpression")
 	astPrinter.identationLevel++
 
@@ -91,7 +93,7 @@ func (astPrinter *AstPrinter) VisitGetExpression(getExpression *GetExpression) {
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitGroupingExpression(groupingExpression *GroupingExpression) {
+func (astPrinter *Printer) VisitGroupingExpression(groupingExpression *GroupingExpression) {
 	astPrinter.write("GroupingExpression")
 	astPrinter.identationLevel++
 
@@ -103,14 +105,14 @@ func (astPrinter *AstPrinter) VisitGroupingExpression(groupingExpression *Groupi
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitLiteralExpression(literalExpression *LiteralExpression) {
+func (astPrinter *Printer) VisitLiteralExpression(literalExpression *LiteralExpression) {
 	astPrinter.write("LiteralExpression")
 	astPrinter.identationLevel++
 	astPrinter.write("value: " + literalExpression.value.String())
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitLogicalExpression(logicalExpression *LogicalExpression) {
+func (astPrinter *Printer) VisitLogicalExpression(logicalExpression *LogicalExpression) {
 	astPrinter.write("LogicalExpression")
 	astPrinter.identationLevel++
 
@@ -129,7 +131,7 @@ func (astPrinter *AstPrinter) VisitLogicalExpression(logicalExpression *LogicalE
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitSetExpression(setExpression *SetExpression) {
+func (astPrinter *Printer) VisitSetExpression(setExpression *SetExpression) {
 	astPrinter.write("SetExpression")
 	astPrinter.identationLevel++
 
@@ -148,18 +150,18 @@ func (astPrinter *AstPrinter) VisitSetExpression(setExpression *SetExpression) {
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitSuperExpression(superExpression *SuperExpression) {
+func (astPrinter *Printer) VisitSuperExpression(superExpression *SuperExpression) {
 	astPrinter.write("SuperExpression")
 	astPrinter.identationLevel++
 	astPrinter.write("method: " + superExpression.Method.Lexeme)
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitThisExpression(thisExpression *ThisExpression) {
+func (astPrinter *Printer) VisitThisExpression(_ *ThisExpression) {
 	astPrinter.write("ThisExpression")
 }
 
-func (astPrinter *AstPrinter) VisitUnaryExpression(unaryExpression *UnaryExpression) {
+func (astPrinter *Printer) VisitUnaryExpression(unaryExpression *UnaryExpression) {
 	astPrinter.write("UnaryExpression")
 	astPrinter.identationLevel++
 
@@ -173,14 +175,14 @@ func (astPrinter *AstPrinter) VisitUnaryExpression(unaryExpression *UnaryExpress
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitVariableExpression(variableExpression *VariableExpression) {
+func (astPrinter *Printer) VisitVariableExpression(variableExpression *VariableExpression) {
 	astPrinter.write("VariableExpression")
 	astPrinter.identationLevel++
 	astPrinter.write("name: " + variableExpression.Name.Lexeme)
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitBlockStatement(blockStatement *BlockStatement) {
+func (astPrinter *Printer) VisitBlockStatement(blockStatement *BlockStatement) {
 	astPrinter.write("BlockStatement")
 	astPrinter.identationLevel++
 
@@ -189,7 +191,7 @@ func (astPrinter *AstPrinter) VisitBlockStatement(blockStatement *BlockStatement
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitClassStatement(classStatement *ClassStatement) {
+func (astPrinter *Printer) VisitClassStatement(classStatement *ClassStatement) {
 	astPrinter.write("ClassStatement")
 	astPrinter.identationLevel++
 
@@ -215,7 +217,6 @@ func (astPrinter *AstPrinter) VisitClassStatement(classStatement *ClassStatement
 			astPrinter.identationLevel--
 
 			astPrinter.identationLevel--
-
 		}
 		astPrinter.identationLevel--
 	}
@@ -223,7 +224,7 @@ func (astPrinter *AstPrinter) VisitClassStatement(classStatement *ClassStatement
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitExpressionStatement(expressionStatement *ExpressionStatement) {
+func (astPrinter *Printer) VisitExpressionStatement(expressionStatement *ExpressionStatement) {
 	astPrinter.write("ExpressionStatement")
 	astPrinter.identationLevel++
 
@@ -235,7 +236,7 @@ func (astPrinter *AstPrinter) VisitExpressionStatement(expressionStatement *Expr
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitFunctionStatement(functionStatement *FunctionStatement) {
+func (astPrinter *Printer) VisitFunctionStatement(functionStatement *FunctionStatement) {
 	astPrinter.write("FunctionStatement")
 	astPrinter.identationLevel++
 
@@ -254,7 +255,7 @@ func (astPrinter *AstPrinter) VisitFunctionStatement(functionStatement *Function
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitIfStatement(ifStatement *IfStatement) {
+func (astPrinter *Printer) VisitIfStatement(ifStatement *IfStatement) {
 	astPrinter.write("IfStatement")
 	astPrinter.identationLevel++
 
@@ -278,7 +279,7 @@ func (astPrinter *AstPrinter) VisitIfStatement(ifStatement *IfStatement) {
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitPrintStatement(printStatement *PrintStatement) {
+func (astPrinter *Printer) VisitPrintStatement(printStatement *PrintStatement) {
 	astPrinter.write("PrintStatement")
 	astPrinter.identationLevel++
 
@@ -290,7 +291,7 @@ func (astPrinter *AstPrinter) VisitPrintStatement(printStatement *PrintStatement
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitReturnStatement(returnStatement *ReturnStatement) {
+func (astPrinter *Printer) VisitReturnStatement(returnStatement *ReturnStatement) {
 	astPrinter.write("ReturnStatement")
 	astPrinter.identationLevel++
 
@@ -304,7 +305,7 @@ func (astPrinter *AstPrinter) VisitReturnStatement(returnStatement *ReturnStatem
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitVariableStatement(variableStatement *VariableStatement) {
+func (astPrinter *Printer) VisitVariableStatement(variableStatement *VariableStatement) {
 	astPrinter.write("VariableStatement")
 	astPrinter.identationLevel++
 
@@ -320,7 +321,7 @@ func (astPrinter *AstPrinter) VisitVariableStatement(variableStatement *Variable
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) VisitWhileStatement(whileStatement *WhileStatement) {
+func (astPrinter *Printer) VisitWhileStatement(whileStatement *WhileStatement) {
 	astPrinter.write("WhileStatement")
 	astPrinter.identationLevel++
 
@@ -337,15 +338,15 @@ func (astPrinter *AstPrinter) VisitWhileStatement(whileStatement *WhileStatement
 	astPrinter.identationLevel--
 }
 
-func (astPrinter *AstPrinter) write(value string) {
+func (astPrinter *Printer) write(value string) {
 	fmt.Fprintf(astPrinter.output,
 		"%s%s\n",
-		strings.Repeat(" ", astPrinter.identationLevel*astPrinter.tabSize),
+		strings.Repeat(" ", int(astPrinter.identationLevel*astPrinter.tabSize)),
 		value,
 	)
 }
 
-func (astPrinter *AstPrinter) writeStatements(name string, statements []Statement) {
+func (astPrinter *Printer) writeStatements(name string, statements []Statement) {
 	astPrinter.write(name + ": ")
 	for i, statement := range statements {
 		astPrinter.identationLevel++
@@ -359,7 +360,7 @@ func (astPrinter *AstPrinter) writeStatements(name string, statements []Statemen
 	}
 }
 
-func (astPrinter *AstPrinter) writeExpression(name string, expressions []Expression) {
+func (astPrinter *Printer) writeExpression(name string, expressions []Expression) {
 	astPrinter.write(name + ": ")
 	for i, expression := range expressions {
 		astPrinter.identationLevel++
