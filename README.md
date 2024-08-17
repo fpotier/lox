@@ -13,7 +13,7 @@ The test suite in `test/official_tests` comes from the [original implementation]
 <details>
 
 | Feature              | Implementation     |
-| -------------------- | ------------------ |
+| :------------------: | :----------------: |
 | assignment           | :white_check_mark: |
 | benchmark            | :white_check_mark: |
 | block                | :white_check_mark: |
@@ -32,7 +32,7 @@ The test suite in `test/official_tests` comes from the [original implementation]
 | logical operator     | :white_check_mark: |
 | method               | :white_check_mark: |
 | nil                  | :white_check_mark: |
-| number               | :x:                |
+| number               | :white_check_mark: |
 | operator             | :white_check_mark: |
 | print                | :white_check_mark: |
 | regression           | :white_check_mark: |
