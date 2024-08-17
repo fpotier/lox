@@ -31,3 +31,12 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
+issues:
+  exclude-rules:
+    - path: .*generated-errors\.go
+      linters:
+        - goconst
+        - gofmt
+        - goimports
+        - gosimple
+        - perfsprint
