@@ -4,14 +4,14 @@ on:
     branches:
       - master
     paths:
-      - go
-      - benchmark
-      - test
+      - go/**
+      - benchmark/**
+      - test/**
   pull_request:
     paths:
-      - go
-      - benchmark
-      - test
+      - go/**
+      - benchmark/**
+      - test/**
 jobs:
   lint:
     name: lint
