@@ -6,7 +6,8 @@
   "packageRules": [
     {
       "matchDatasources": ["golang-version"],
-      "rangeStrategy": "bump"
+      "rangeStrategy": "bump",
+      "versioning": "major"
     }
   ]
 }
