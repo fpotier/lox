@@ -1,6 +1,6 @@
 module github.com/fpotier/lox/go
 
-go 1.21
+go 1.24.2
 
 require github.com/sean-/sysexits v1.0.0
 
