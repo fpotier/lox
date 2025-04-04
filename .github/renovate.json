@@ -5,9 +5,13 @@
   ],
   "packageRules": [
     {
-      "matchDatasources": ["golang-version"],
-      "rangeStrategy": "bump",
-      "versioning": "major"
+      "matchDatasources": [
+        "golang-version"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ]
     }
   ]
 }
