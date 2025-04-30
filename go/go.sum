@@ -1,4 +1,6 @@
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e h1:aoZm08cpOy4WuID//EZDgcC4zIxODThtZNPirFr42+A=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
+github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c h1:8TRxBMS/YsupXoOiGKHr9ZOXo+5DezGWPgBAhBHEHto=
+github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/sean-/sysexits v1.0.0 h1:FLf1xcUTBzTqUI1Nc77UwYPcoWgDM09lyMTt8+QCpbE=
 github.com/sean-/sysexits v1.0.0/go.mod h1:yRz1mwglmPHOlAm3+WGr40EV8qFg4hn8GE9MoNwoecg=
