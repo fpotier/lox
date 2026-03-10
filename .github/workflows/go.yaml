@@ -83,7 +83,7 @@ jobs:
         run: go test ./cmd/glox -bench=. -count 5 -run=^# -timeout 30m | tee output.txt
 
       - name: Download previous benchmark data
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
