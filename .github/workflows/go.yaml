@@ -2,7 +2,7 @@ name: go
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - go/**
       - test/**
@@ -73,7 +73,7 @@ jobs:
           imageName: ${{ env.DEVCONTAINER_IMAGE }}
           cacheFrom: ${{ env.DEVCONTAINER_IMAGE }}
           push: filter
-          refFilterForPush: refs/heads/master
+          refFilterForPush: refs/heads/main
           eventFilterForPush: push
           runCmd: |
             set -euo pipefail
