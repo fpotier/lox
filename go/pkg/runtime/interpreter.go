@@ -123,7 +123,7 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpressi
 func (i *Interpreter) VisitCallExpression(callExpression *ast.CallExpression) {
 	callee := i.evaluate(callExpression.Callee)
 
-	arguments := make([]ast.LoxValue, 0)
+	arguments := make([]ast.LoxValue, 0, len(callExpression.Args))
 	for _, argument := range callExpression.Args {
 		arguments = append(arguments, i.evaluate(argument))
 	}
@@ -295,7 +295,7 @@ func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStat
 }
 
 func (i *Interpreter) VisitWhileStatement(whileStatement *ast.WhileStatement) {
-	for i.evaluate(whileStatement.Condition).IsTruthy() && !(i.frameNumber > 0 && i.hasReturned) {
+	for i.evaluate(whileStatement.Condition).IsTruthy() && (i.frameNumber <= 0 || !i.hasReturned) {
 		i.execute(whileStatement.Body)
 	}
 }
@@ -304,7 +304,7 @@ func (i *Interpreter) executeBlock(statements []ast.Statement, subEnvironment *E
 	previousEnv := i.environment
 	i.environment = subEnvironment
 	defer func() { i.environment = previousEnv }()
-	for index := 0; index < len(statements) && !(i.frameNumber > 0 && i.hasReturned); index++ {
+	for index := 0; index < len(statements) && (i.frameNumber <= 0 || !i.hasReturned); index++ {
 		i.execute(statements[index])
 	}
 }
@@ -335,7 +335,7 @@ func (i *Interpreter) lookupVariable(name lexer.Token, e ast.Expression) ast.Lox
 }
 
 func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxValue) {
-	if !(lhs.Kind() == ast.Number) || !(rhs.Kind() == ast.Number) {
+	if lhs.Kind() != ast.Number || rhs.Kind() != ast.Number {
 		panic(
 			NewUnsupportedBinaryOperation(
 				operator.Line,
@@ -348,7 +348,7 @@ func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxVal
 }
 
 func assertNumberOperand(operator lexer.Token, rhs ast.LoxValue) {
-	if !(rhs.Kind() == ast.Number) {
+	if rhs.Kind() != ast.Number {
 		panic(NewUnsupportedUnaryOperation(operator.Line, operator.Lexeme, ast.KindString[rhs.Kind()]))
 	}
 }

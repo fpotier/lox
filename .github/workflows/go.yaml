@@ -5,95 +5,68 @@ on:
       - master
     paths:
       - go/**
-      - benchmark/**
       - test/**
+      - .github/workflows/**
   pull_request:
     paths:
       - go/**
-      - benchmark/**
       - test/**
+      - .github/workflows/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
-    name: lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v5
         with:
-          go-version: stable
-          cache-dependency-path: go.sum
-
-      - name: Generate code
-        run: go generate ./...
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: oldstable
+          cache-dependency-path: go/go.sum
+      - run: go generate ./...
         working-directory: go
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+      - uses: golangci/golangci-lint-action@v9
         with:
-          install-mode: goinstall
-          version: latest
+          version: v2.15.0
           working-directory: go
-          args: --config="${GITHUB_WORKSPACE}/go/.golangci.yaml"
+
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
 
   test:
-    name: test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        go: [oldstable, stable]
     defaults:
       run:
         working-directory: go
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v5
         with:
-          go-version: stable
-          cache-dependency-path: go.sum
-
-      - name: Install dependencies
-        run: go mod tidy
-
-      - name: Generate code
-        run: go generate ./...
-
-      - name: Compile
-        run: go build -v ./...
-
-      - name: Run tests
-        run: go test -v ./...
-
-  benchmark:
-    name: benchmark
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: go
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v5
+          persist-credentials: false
+      - uses: actions/setup-go@v6
         with:
-          go-version: stable
-          cache-dependency-path: go.sum
-
-      - name: Generate code
-        run: go generate ./...
-
-      - name: Run benchmark
-        run: go test ./cmd/glox -bench=. -count 5 -run=^# -timeout 30m | tee output.txt
-
-      - name: Download previous benchmark data
-        uses: actions/cache@v5
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
-
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: 'go'
-          output-file-path: go/output.txt
-          external-data-json-path: ./cache/benchmark-data.json
-          fail-on-alert: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          comment-on-alert: true
+          go-version: ${{ matrix.go }}
+          cache-dependency-path: go/go.sum
+      - run: go mod tidy -diff
+      - run: go generate ./...
+      - run: go test -v ./...

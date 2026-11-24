@@ -17,24 +17,24 @@ func NewLoxFunction(declaration *ast.FunctionStatement, closure *Environment, is
 	return &LoxFunction{Declaration: declaration, Closure: closure, isConstructor: isConstructor, className: ""}
 }
 func (f *LoxFunction) setClassName(className string) { f.className = className }
-func (f LoxFunction) Kind() ast.Kind                 { return ast.Function }
-func (f LoxFunction) IsTruthy() bool                 { return true }
-func (f LoxFunction) String() string                 { return fmt.Sprintf("<fn %s>", f.Declaration.Name.Lexeme) }
-func (f LoxFunction) Name() string {
+func (f *LoxFunction) Kind() ast.Kind                { return ast.Function }
+func (f *LoxFunction) IsTruthy() bool                { return true }
+func (f *LoxFunction) String() string                { return fmt.Sprintf("<fn %s>", f.Declaration.Name.Lexeme) }
+func (f *LoxFunction) Name() string {
 	if len(f.className) == 0 {
 		return f.Declaration.Name.Lexeme
 	}
 
 	return f.className + "::" + f.Declaration.Name.Lexeme
 }
-func (f LoxFunction) Equals(v ast.LoxValue) bool {
+func (f *LoxFunction) Equals(v ast.LoxValue) bool {
 	if v, ok := v.(*LoxFunction); ok {
 		return f.Closure == v.Closure
 	}
 	return false
 }
 
-func (f LoxFunction) Call(i *Interpreter, arguments []ast.LoxValue) (returnValue ast.LoxValue) {
+func (f *LoxFunction) Call(i *Interpreter, arguments []ast.LoxValue) (returnValue ast.LoxValue) {
 	environment := NewSubEnvironment(f.Closure)
 	for i := range f.Declaration.Parameters {
 		environment.Define(f.Declaration.Parameters[i].Lexeme, arguments[i])
@@ -51,7 +51,7 @@ func (f LoxFunction) Call(i *Interpreter, arguments []ast.LoxValue) (returnValue
 
 	return i.Value
 }
-func (f LoxFunction) Arity() int { return len(f.Declaration.Parameters) }
+func (f *LoxFunction) Arity() int { return len(f.Declaration.Parameters) }
 
 func (f *LoxFunction) Bind(this *LoxInstance) *LoxFunction {
 	environment := NewSubEnvironment(f.Closure)
