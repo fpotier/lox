@@ -1,0 +1,7 @@
+{
+  "name": "lox",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "postCreateCommand": "cd go && go mod download && go generate ./..."
+}

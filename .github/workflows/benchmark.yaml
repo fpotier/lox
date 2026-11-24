@@ -4,6 +4,7 @@ on:
     paths:
       - go/**
       - benchmark/**
+      - .devcontainer/**
       - .github/workflows/benchmark.yaml
 
 permissions:
@@ -13,35 +14,47 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DEVCONTAINER_IMAGE: ghcr.io/${{ github.repository }}-devcontainer
+
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v6
         with:
-          path: head
           persist-credentials: false
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.base.sha }}
-          path: base
+          path: .bench-base
           persist-credentials: false
-      - uses: actions/setup-go@v6
+      - uses: docker/login-action@v4
         with:
-          go-version: oldstable
-          cache-dependency-path: head/go/go.sum
-      - name: Benchmark base
-        working-directory: base/go
-        run: go generate ./... && go test ./cmd/glox -run='^$' -bench=. -count=6 -timeout=30m > ../../base.txt
-      - name: Benchmark PR
-        working-directory: head/go
-        run: go generate ./... && go test ./cmd/glox -run='^$' -bench=. -count=6 -timeout=30m > ../../head.txt
-      - name: Compare
-        working-directory: head/go
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.DEVCONTAINER_IMAGE }}
+          cacheFrom: ${{ env.DEVCONTAINER_IMAGE }}
+          push: never
+          runCmd: |
+            set -euo pipefail
+            bench() {
+              (cd "$1" && go generate ./... && go test ./cmd/glox -run='^$' -bench=. -count=6 -timeout=30m)
+            }
+            bench .bench-base/go > base.txt
+            bench go > head.txt
+            (cd go && go tool benchstat base=../base.txt pr=../head.txt) > benchstat.txt
+      - name: Publish comparison
         run: |
           {
             echo '```'
-            go tool benchstat base=../../base.txt pr=../../head.txt
+            cat benchstat.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

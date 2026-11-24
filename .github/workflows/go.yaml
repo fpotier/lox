@@ -6,11 +6,13 @@ on:
     paths:
       - go/**
       - test/**
+      - .devcontainer/**
       - .github/workflows/**
   pull_request:
     paths:
       - go/**
       - test/**
+      - .devcontainer/**
       - .github/workflows/**
 
 permissions:
@@ -20,53 +22,66 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DEVCONTAINER_IMAGE: ghcr.io/${{ github.repository }}-devcontainer
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-go@v6
+      - uses: docker/login-action@v4
         with:
-          go-version: oldstable
-          cache-dependency-path: go/go.sum
-      - run: go generate ./...
-        working-directory: go
-      - uses: golangci/golangci-lint-action@v9
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: devcontainers/ci@v0.3
         with:
-          version: v2.15.0
-          working-directory: go
-
-  actionlint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - uses: docker://rhysd/actionlint:1.7.12
-        with:
-          args: -color
+          imageName: ${{ env.DEVCONTAINER_IMAGE }}
+          cacheFrom: ${{ env.DEVCONTAINER_IMAGE }}
+          push: never
+          runCmd: |
+            set -euo pipefail
+            cd go
+            go generate ./...
+            go tool actionlint -color
+            golangci-lint run ./...
 
   test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      matrix:
-        go: [oldstable, stable]
-    defaults:
-      run:
-        working-directory: go
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-go@v6
+      - uses: docker/login-action@v4
         with:
-          go-version: ${{ matrix.go }}
-          cache-dependency-path: go/go.sum
-      - run: go mod tidy -diff
-      - run: go generate ./...
-      - run: go test -v ./...
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.DEVCONTAINER_IMAGE }}
+          cacheFrom: ${{ env.DEVCONTAINER_IMAGE }}
+          push: filter
+          refFilterForPush: refs/heads/master
+          eventFilterForPush: push
+          runCmd: |
+            set -euo pipefail
+            cd go
+            go mod tidy -diff
+            go generate ./...
+            for toolchain in local "go$GO_OLDSTABLE"; do
+              echo "::group::$(GOTOOLCHAIN=$toolchain go version)"
+              GOTOOLCHAIN="$toolchain" go test -v ./...
+              echo "::endgroup::"
+            done
