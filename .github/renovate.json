@@ -6,5 +6,33 @@
   ],
   "postUpdateOptions": [
     "gomodTidy"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+ARG \\w+=(?<currentValue>\\S+)"
+      ]
+    }
+  ],
+  "customDatasources": {
+    "go-oldstable": {
+      "defaultRegistryUrlTemplate": "https://go.dev/dl/?mode=json",
+      "transformTemplates": [
+        "{ \"releases\": [{ \"version\": $substringAfter($[1].version, \"go\") }] }"
+      ]
+    }
+  },
+  "packageRules": [
+    {
+      "matchDepNames": [
+        "mcr.microsoft.com/devcontainers/go",
+        "go-oldstable"
+      ],
+      "groupName": "go"
+    }
   ]
 }
