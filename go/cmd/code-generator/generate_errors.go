@@ -1,3 +1,4 @@
+//nolint:goconst // the error table repeats type and field names by design
 package main
 
 import (

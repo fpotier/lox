@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"slices"
+
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
 	"github.com/fpotier/lox/go/pkg/loxerror"
@@ -217,8 +219,8 @@ func (r *Resolver) resolveStatement(s ast.Statement)   { s.Accept(r) }
 func (r *Resolver) resolveExpression(e ast.Expression) { e.Accept(r) }
 
 func (r *Resolver) resolveLocal(e ast.Expression, name lexer.Token) {
-	for i := len(r.scopes) - 1; i >= 0; i-- {
-		if _, ok := r.scopes[i][name.Lexeme]; ok {
+	for i, scope := range slices.Backward(r.scopes) {
+		if _, ok := scope[name.Lexeme]; ok {
 			r.interpreter.resolve(e, len(r.scopes)-1-i)
 			return
 		}

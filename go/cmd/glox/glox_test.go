@@ -100,7 +100,7 @@ func runFilesInDirBench(b *testing.B, dirPath string) {
 
 	for _, file := range loxFiles {
 		b.Run(file, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				var (
 					stdoutBuilder = strings.Builder{}
 					stderrBuilder = strings.Builder{}
@@ -132,7 +132,7 @@ func checkRunOutput(filename string, diffOutput io.Writer) error {
 	// Required when files use CRLF or CR instead of LF (Go doesn't convert when reading)
 	fileContent := strings.ReplaceAll(string(rawFileContent), "\r", "")
 	expectedStdoutBuilder := strings.Builder{}
-	for _, line := range strings.Split(fileContent, "\n") {
+	for line := range strings.SplitSeq(fileContent, "\n") {
 		match := outputPattern.FindStringSubmatch(line)
 		if len(match) > 1 {
 			expectedStdoutBuilder.WriteString(match[1])
@@ -148,7 +148,7 @@ func checkRunOutput(filename string, diffOutput io.Writer) error {
 	}
 
 	expectedStderrBuilder := strings.Builder{}
-	for _, line := range strings.Split(fileContent, "\n") {
+	for line := range strings.SplitSeq(fileContent, "\n") {
 		match := errorPattern.FindStringSubmatch(line)
 		if len(match) > 1 {
 			expectedStderrBuilder.WriteString(match[1])

@@ -66,7 +66,7 @@ func (l *Lox) RunPrompt() {
 }
 
 func (l *Lox) RunFile(filepath string) int {
-	sourceCode, err := os.ReadFile(filepath)
+	sourceCode, err := os.ReadFile(filepath) //nolint:gosec // reading the user-supplied script is the point
 	if err != nil {
 		log.Fatal(err)
 	}
