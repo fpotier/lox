@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/go:1.27
+FROM mcr.microsoft.com/devcontainers/go:1.27@sha256:74f45fc4c2abe0de9a9acdb4225ffb3e58e6b28f9af2e209afaa8920a3d3b623
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends shellcheck \
