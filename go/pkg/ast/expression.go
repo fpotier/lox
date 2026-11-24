@@ -1,6 +1,9 @@
 package ast
 
-import "github.com/fpotier/lox/go/pkg/lexer"
+import (
+	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/value"
+)
 
 func NewAssignmentExpression(name lexer.Token, value Expression) *AssignmentExpression {
 	return &AssignmentExpression{
@@ -35,10 +38,8 @@ func NewGroupingExpression(expr Expression) *GroupingExpression {
 	}
 }
 
-func NewLiteralExpression(value LoxValue) *LiteralExpression {
-	return &LiteralExpression{
-		value: value,
-	}
+func NewLiteralExpression(v value.Value) *LiteralExpression {
+	return &LiteralExpression{value: v}
 }
 
 func NewLogicalExpression(lhs Expression, operator lexer.Token, rhs Expression) *LogicalExpression {
@@ -112,9 +113,9 @@ type GroupingExpression struct {
 
 func (e *GroupingExpression) Accept(visitor Visitor) { visitor.VisitGroupingExpression(e) }
 
-type LiteralExpression struct{ value LoxValue }
+type LiteralExpression struct{ value value.Value }
 
-func (e *LiteralExpression) LoxValue() LoxValue     { return e.value }
+func (e *LiteralExpression) Value() value.Value     { return e.value }
 func (e *LiteralExpression) Accept(visitor Visitor) { visitor.VisitLiteralExpression(e) }
 
 type LogicalExpression struct {

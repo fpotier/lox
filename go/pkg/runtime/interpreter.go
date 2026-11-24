@@ -9,11 +9,12 @@ import (
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
 	"github.com/fpotier/lox/go/pkg/loxerror"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 type Interpreter struct {
 	// Value can be virtually anything (string, number, boolean, object, nil, etc.)
-	Value           ast.LoxValue
+	Value           value.Value
 	HadRuntimeError bool
 	ErrorFormatter  loxerror.ErrorFormatter
 	OutputStream    io.Writer
@@ -26,7 +27,7 @@ type Interpreter struct {
 
 func NewInterpreter(outputStream io.Writer, errorFormatter loxerror.ErrorFormatter) *Interpreter {
 	i := Interpreter{
-		Value:           ast.NewNilValue(),
+		Value:           value.Nil{},
 		HadRuntimeError: false,
 		ErrorFormatter:  errorFormatter,
 		OutputStream:    outputStream,
@@ -79,51 +80,49 @@ func (i *Interpreter) VisitBinaryExpression(binaryExpression *ast.BinaryExpressi
 	lhs := i.evaluate(binaryExpression.LHS)
 	rhs := i.evaluate(binaryExpression.RHS)
 
-	switch binaryExpression.Operator.Type {
-	case lexer.Plus:
-		switch {
-		case lhs.Kind() == ast.Number && rhs.Kind() == ast.Number:
-			i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value + rhs.(*ast.NumberValue).Value)
-		case lhs.Kind() == ast.String && rhs.Kind() == ast.String:
-			i.Value = ast.NewStringValue(lhs.(*ast.StringValue).Value + rhs.(*ast.StringValue).Value)
-		default:
-			panic(NewUnsupportedBinaryOperation(binaryExpression.Operator.Line,
-				binaryExpression.Operator.Lexeme,
-				ast.KindString[lhs.Kind()],
-				ast.KindString[rhs.Kind()]))
-		}
-	case lexer.Dash:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value - rhs.(*ast.NumberValue).Value)
-	case lexer.Star:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value * rhs.(*ast.NumberValue).Value)
-	case lexer.Slash:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewNumberValue(lhs.(*ast.NumberValue).Value / rhs.(*ast.NumberValue).Value)
-	case lexer.Greater:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value > rhs.(*ast.NumberValue).Value)
-	case lexer.GreaterEqual:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value >= rhs.(*ast.NumberValue).Value)
-	case lexer.Less:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value < rhs.(*ast.NumberValue).Value)
-	case lexer.LessEqual:
-		assertNumberOperands(binaryExpression.Operator, lhs, rhs)
-		i.Value = ast.NewBooleanValue(lhs.(*ast.NumberValue).Value <= rhs.(*ast.NumberValue).Value)
+	op := binaryExpression.Operator
+
+	switch op.Type {
 	case lexer.EqualEqual:
-		i.Value = ast.NewBooleanValue(lhs.Equals(rhs))
+		i.Value = value.Bool(lhs == rhs)
+		return
 	case lexer.BangEqual:
-		i.Value = ast.NewBooleanValue(!lhs.Equals(rhs))
+		i.Value = value.Bool(lhs != rhs)
+		return
+	case lexer.Plus:
+		if l, ok := lhs.(value.String); ok {
+			if r, ok := rhs.(value.String); ok {
+				i.Value = l + r
+				return
+			}
+		}
+	}
+
+	l, r := numberOperands(op, lhs, rhs)
+	switch op.Type {
+	case lexer.Plus:
+		i.Value = l + r
+	case lexer.Dash:
+		i.Value = l - r
+	case lexer.Star:
+		i.Value = l * r
+	case lexer.Slash:
+		i.Value = l / r
+	case lexer.Greater:
+		i.Value = value.Bool(l > r)
+	case lexer.GreaterEqual:
+		i.Value = value.Bool(l >= r)
+	case lexer.Less:
+		i.Value = value.Bool(l < r)
+	case lexer.LessEqual:
+		i.Value = value.Bool(l <= r)
 	}
 }
 
 func (i *Interpreter) VisitCallExpression(callExpression *ast.CallExpression) {
 	callee := i.evaluate(callExpression.Callee)
 
-	arguments := make([]ast.LoxValue, 0, len(callExpression.Args))
+	arguments := make([]value.Value, 0, len(callExpression.Args))
 	for _, argument := range callExpression.Args {
 		arguments = append(arguments, i.evaluate(argument))
 	}
@@ -155,15 +154,15 @@ func (i *Interpreter) VisitGroupingExpression(groupingExpression *ast.GroupingEx
 }
 
 func (i *Interpreter) VisitLiteralExpression(literalExpression *ast.LiteralExpression) {
-	i.Value = literalExpression.LoxValue()
+	i.Value = literalExpression.Value()
 }
 
 func (i *Interpreter) VisitLogicalExpression(logicalExpression *ast.LogicalExpression) {
 	lhs := i.evaluate(logicalExpression.LHS)
 	switch {
-	case logicalExpression.Operator.Type == lexer.Or && lhs.IsTruthy():
+	case logicalExpression.Operator.Type == lexer.Or && value.IsTruthy(lhs):
 		i.Value = lhs
-	case logicalExpression.Operator.Type == lexer.And && !lhs.IsTruthy():
+	case logicalExpression.Operator.Type == lexer.And && !value.IsTruthy(lhs):
 		i.Value = lhs
 	default:
 		i.Value = i.evaluate(logicalExpression.RHS)
@@ -205,10 +204,13 @@ func (i *Interpreter) VisitUnaryExpression(unaryExpression *ast.UnaryExpression)
 
 	switch unaryExpression.Operator.Type {
 	case lexer.Bang:
-		i.Value = ast.NewBooleanValue(!rhs.IsTruthy())
+		i.Value = value.Bool(!value.IsTruthy(rhs))
 	case lexer.Dash:
-		assertNumberOperand(unaryExpression.Operator, rhs)
-		i.Value = ast.NewNumberValue(-rhs.(*ast.NumberValue).Value)
+		n, ok := rhs.(value.Number)
+		if !ok {
+			panic(NewUnsupportedUnaryOperation(unaryExpression.Operator.Line, unaryExpression.Operator.Lexeme, rhs.TypeName()))
+		}
+		i.Value = -n
 	}
 }
 
@@ -231,7 +233,7 @@ func (i *Interpreter) VisitClassStatement(classStatement *ast.ClassStatement) {
 		}
 	}
 
-	i.environment.Define(classStatement.Name.Lexeme, ast.NewNilValue())
+	i.environment.Define(classStatement.Name.Lexeme, value.Nil{})
 
 	if classStatement.Superclass != nil {
 		i.environment = NewSubEnvironment(i.environment)
@@ -264,7 +266,7 @@ func (i *Interpreter) VisitFunctionStatement(functionStatement *ast.FunctionStat
 }
 
 func (i *Interpreter) VisitIfStatement(ifStatment *ast.IfStatement) {
-	if i.evaluate(ifStatment.Condition).IsTruthy() {
+	if value.IsTruthy(i.evaluate(ifStatment.Condition)) {
 		i.execute(ifStatment.ThenCode)
 	} else if ifStatment.ElseCode != nil {
 		i.execute(ifStatment.ElseCode)
@@ -281,12 +283,12 @@ func (i *Interpreter) VisitReturnStatement(returnStatement *ast.ReturnStatement)
 	if returnStatement.Value != nil {
 		i.Value = i.evaluate(returnStatement.Value)
 	} else {
-		i.Value = ast.NewNilValue()
+		i.Value = value.Nil{}
 	}
 }
 
 func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStatement) {
-	var value ast.LoxValue = ast.NewNilValue()
+	var value value.Value = value.Nil{}
 	if variableStatement.Initializer != nil {
 		value = i.evaluate(variableStatement.Initializer)
 	}
@@ -295,7 +297,7 @@ func (i *Interpreter) VisitVariableStatement(variableStatement *ast.VariableStat
 }
 
 func (i *Interpreter) VisitWhileStatement(whileStatement *ast.WhileStatement) {
-	for i.evaluate(whileStatement.Condition).IsTruthy() && (i.frameNumber <= 0 || !i.hasReturned) {
+	for value.IsTruthy(i.evaluate(whileStatement.Condition)) && (i.frameNumber <= 0 || !i.hasReturned) {
 		i.execute(whileStatement.Body)
 	}
 }
@@ -313,7 +315,7 @@ func (i *Interpreter) execute(statement ast.Statement) {
 	statement.Accept(i)
 }
 
-func (i *Interpreter) evaluate(expression ast.Expression) ast.LoxValue {
+func (i *Interpreter) evaluate(expression ast.Expression) value.Value {
 	oldValue := i.Value
 	expression.Accept(i)
 	evalValue := i.Value
@@ -326,7 +328,7 @@ func (i *Interpreter) resolve(e ast.Expression, depth int) {
 	i.locals[e] = depth
 }
 
-func (i *Interpreter) lookupVariable(name lexer.Token, e ast.Expression) ast.LoxValue {
+func (i *Interpreter) lookupVariable(name lexer.Token, e ast.Expression) value.Value {
 	if distance, ok := i.locals[e]; ok {
 		return i.environment.GetAt(distance, name.Lexeme)
 	}
@@ -334,21 +336,14 @@ func (i *Interpreter) lookupVariable(name lexer.Token, e ast.Expression) ast.Lox
 	return i.globals.Get(name)
 }
 
-func assertNumberOperands(operator lexer.Token, lhs ast.LoxValue, rhs ast.LoxValue) {
-	if lhs.Kind() != ast.Number || rhs.Kind() != ast.Number {
-		panic(
-			NewUnsupportedBinaryOperation(
-				operator.Line,
-				operator.Lexeme,
-				ast.KindString[lhs.Kind()],
-				ast.KindString[rhs.Kind()],
-			),
-		)
+// numberOperands returns both operands as numbers, or panics with a runtime error
+// if either of them is not a number.
+func numberOperands(operator lexer.Token, lhs, rhs value.Value) (value.Number, value.Number) {
+	l, lok := lhs.(value.Number)
+	r, rok := rhs.(value.Number)
+	if !lok || !rok {
+		panic(NewUnsupportedBinaryOperation(operator.Line, operator.Lexeme, lhs.TypeName(), rhs.TypeName()))
 	}
-}
 
-func assertNumberOperand(operator lexer.Token, rhs ast.LoxValue) {
-	if rhs.Kind() != ast.Number {
-		panic(NewUnsupportedUnaryOperation(operator.Line, operator.Lexeme, ast.KindString[rhs.Kind()]))
-	}
+	return l, r
 }

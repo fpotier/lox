@@ -1,23 +1,23 @@
 package runtime
 
 import (
-	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 type LoxInstance struct {
-	class  LoxClass
-	fields map[string]ast.LoxValue
+	class  *LoxClass
+	fields map[string]value.Value
 }
 
-func NewLoxInstance(class LoxClass) *LoxInstance {
+func NewLoxInstance(class *LoxClass) *LoxInstance {
 	return &LoxInstance{
 		class:  class,
-		fields: make(map[string]ast.LoxValue),
+		fields: make(map[string]value.Value),
 	}
 }
 
-func (i *LoxInstance) Get(name lexer.Token) ast.LoxValue {
+func (i *LoxInstance) Get(name lexer.Token) value.Value {
 	if value, ok := i.fields[name.Lexeme]; ok {
 		return value
 	}
@@ -29,11 +29,9 @@ func (i *LoxInstance) Get(name lexer.Token) ast.LoxValue {
 	panic(NewUndefinedProperty(name.Line, name.Lexeme, i.class.name))
 }
 
-func (i *LoxInstance) Set(name lexer.Token, value ast.LoxValue) {
+func (i *LoxInstance) Set(name lexer.Token, value value.Value) {
 	i.fields[name.Lexeme] = value
 }
 
-func (i *LoxInstance) Kind() ast.Kind             { return ast.Instance }
-func (i *LoxInstance) IsTruthy() bool             { return true }
-func (i *LoxInstance) String() string             { return i.class.name + " instance" }
-func (i *LoxInstance) Equals(_ ast.LoxValue) bool { return false }
+func (*LoxInstance) TypeName() string { return "instance" }
+func (i *LoxInstance) String() string { return i.class.name + " instance" }

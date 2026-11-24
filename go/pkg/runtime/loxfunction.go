@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 type LoxFunction struct {
@@ -17,8 +18,7 @@ func NewLoxFunction(declaration *ast.FunctionStatement, closure *Environment, is
 	return &LoxFunction{Declaration: declaration, Closure: closure, isConstructor: isConstructor, className: ""}
 }
 func (f *LoxFunction) setClassName(className string) { f.className = className }
-func (f *LoxFunction) Kind() ast.Kind                { return ast.Function }
-func (f *LoxFunction) IsTruthy() bool                { return true }
+func (*LoxFunction) TypeName() string                { return "function" }
 func (f *LoxFunction) String() string                { return fmt.Sprintf("<fn %s>", f.Declaration.Name.Lexeme) }
 func (f *LoxFunction) Name() string {
 	if len(f.className) == 0 {
@@ -27,14 +27,8 @@ func (f *LoxFunction) Name() string {
 
 	return f.className + "::" + f.Declaration.Name.Lexeme
 }
-func (f *LoxFunction) Equals(v ast.LoxValue) bool {
-	if v, ok := v.(*LoxFunction); ok {
-		return f.Closure == v.Closure
-	}
-	return false
-}
 
-func (f *LoxFunction) Call(i *Interpreter, arguments []ast.LoxValue) (returnValue ast.LoxValue) {
+func (f *LoxFunction) Call(i *Interpreter, arguments []value.Value) (returnValue value.Value) {
 	environment := NewSubEnvironment(f.Closure)
 	for i := range f.Declaration.Parameters {
 		environment.Define(f.Declaration.Parameters[i].Lexeme, arguments[i])

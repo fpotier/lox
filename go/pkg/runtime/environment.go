@@ -1,35 +1,35 @@
 package runtime
 
 import (
-	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 type Environment struct {
 	enclosing *Environment
-	symbols   map[string]ast.LoxValue
+	symbols   map[string]value.Value
 }
 
 func NewEnvironment() *Environment {
 	return &Environment{
 		enclosing: nil,
-		symbols:   make(map[string]ast.LoxValue),
+		symbols:   make(map[string]value.Value),
 	}
 }
 
 func NewSubEnvironment(enclosing *Environment) *Environment {
 	return &Environment{
 		enclosing: enclosing,
-		symbols:   make(map[string]ast.LoxValue),
+		symbols:   make(map[string]value.Value),
 	}
 }
 
-func (e *Environment) Define(name string, value ast.LoxValue) {
+func (e *Environment) Define(name string, value value.Value) {
 	// Note: redeclaring a top-level (global) variable is allowed
 	e.symbols[name] = value
 }
 
-func (e *Environment) Get(name lexer.Token) ast.LoxValue {
+func (e *Environment) Get(name lexer.Token) value.Value {
 	if val, ok := e.symbols[name.Lexeme]; ok {
 		return val
 	}
@@ -41,11 +41,11 @@ func (e *Environment) Get(name lexer.Token) ast.LoxValue {
 	panic(NewUndefinedVariable(name.Line, name.Lexeme))
 }
 
-func (e *Environment) GetAt(distance int, name string) ast.LoxValue {
+func (e *Environment) GetAt(distance int, name string) value.Value {
 	return e.ancestor(distance).symbols[name]
 }
 
-func (e *Environment) Assign(name lexer.Token, value ast.LoxValue) {
+func (e *Environment) Assign(name lexer.Token, value value.Value) {
 	if _, ok := e.symbols[name.Lexeme]; ok {
 		e.symbols[name.Lexeme] = value
 		return
@@ -59,7 +59,7 @@ func (e *Environment) Assign(name lexer.Token, value ast.LoxValue) {
 	panic(NewUndefinedVariable(name.Line, name.Lexeme))
 }
 
-func (e *Environment) AssignAt(distance int, name lexer.Token, value ast.LoxValue) {
+func (e *Environment) AssignAt(distance int, name lexer.Token, value value.Value) {
 	e.ancestor(distance).symbols[name.Lexeme] = value
 }
 

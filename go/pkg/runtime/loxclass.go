@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 type LoxClass struct {
@@ -20,14 +20,12 @@ func NewLoxClass(name string, superclass *LoxClass, methods map[string]*LoxFunct
 	}
 }
 
-func (c *LoxClass) Kind() ast.Kind             { return ast.Class }
-func (c *LoxClass) IsTruthy() bool             { return true }
-func (c *LoxClass) String() string             { return c.name }
-func (c *LoxClass) Name() string               { return fmt.Sprintf("%s::%s", c.name, c.name) }
-func (c *LoxClass) Equals(v ast.LoxValue) bool { return c == v }
+func (*LoxClass) TypeName() string { return "class" }
+func (c *LoxClass) String() string { return c.name }
+func (c *LoxClass) Name() string   { return fmt.Sprintf("%s::%s", c.name, c.name) }
 
-func (c *LoxClass) Call(i *Interpreter, arguments []ast.LoxValue) ast.LoxValue {
-	instance := NewLoxInstance(*c)
+func (c *LoxClass) Call(i *Interpreter, arguments []value.Value) value.Value {
+	instance := NewLoxInstance(c)
 	if constructor, ok := c.findMethod("init"); ok {
 		constructor.Bind(instance).Call(i, arguments)
 	}

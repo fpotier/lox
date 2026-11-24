@@ -7,6 +7,7 @@ import (
 	"github.com/fpotier/lox/go/pkg/ast"
 	"github.com/fpotier/lox/go/pkg/lexer"
 	"github.com/fpotier/lox/go/pkg/loxerror"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 // Grammar rules of the Lox language
@@ -244,7 +245,7 @@ func (p *Parser) forStatement() ast.Statement {
 	}
 
 	if condition == nil {
-		condition = ast.NewLiteralExpression(ast.NewBooleanValue(true))
+		condition = ast.NewLiteralExpression(value.Bool(true))
 	}
 
 	var forLoop ast.Statement = ast.NewWhileStatement(condition, body)
@@ -458,11 +459,11 @@ func (p *Parser) finishCall(callee ast.Expression) ast.Expression {
 func (p *Parser) primary() ast.Expression {
 	switch {
 	case p.match(lexer.False):
-		return ast.NewLiteralExpression(ast.NewBooleanValue(false))
+		return ast.NewLiteralExpression(value.Bool(false))
 	case p.match(lexer.True):
-		return ast.NewLiteralExpression(ast.NewBooleanValue(true))
+		return ast.NewLiteralExpression(value.Bool(true))
 	case p.match(lexer.Nil):
-		return ast.NewLiteralExpression(ast.NewNilValue())
+		return ast.NewLiteralExpression(value.Nil{})
 	case p.match(lexer.This):
 		return ast.NewThisExpression(p.previous())
 	case p.match(lexer.Super):
@@ -471,9 +472,9 @@ func (p *Parser) primary() ast.Expression {
 		method := p.consume(lexer.Identifier, "Expect superclass method name")
 		return ast.NewSuperExpression(keyword, method)
 	case p.match(lexer.Number):
-		return ast.NewLiteralExpression(ast.NewNumberValue(p.previous().Literal.(*lexer.NumberLiteral).Value))
+		return ast.NewLiteralExpression(value.Number(p.previous().Literal.(*lexer.NumberLiteral).Value))
 	case p.match(lexer.String):
-		return ast.NewLiteralExpression(ast.NewStringValue(p.previous().Literal.(*lexer.StringLiteral).Value))
+		return ast.NewLiteralExpression(value.String(p.previous().Literal.(*lexer.StringLiteral).Value))
 	case p.match(lexer.Identifier):
 		return ast.NewVariableExpression(p.previous())
 	case p.match(lexer.LeftParenthesis):

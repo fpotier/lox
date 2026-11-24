@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/go/pkg/value"
 )
 
 type NativeFunction struct {
@@ -13,36 +13,35 @@ type NativeFunction struct {
 	code  CallableCode
 }
 
-func (f NativeFunction) Kind() ast.Kind             { return ast.NativeFunc }
-func (f NativeFunction) IsTruthy() bool             { return true }
-func (f NativeFunction) String() string             { return "<native fn>" }
-func (f NativeFunction) Name() string               { return f.name }
-func (f NativeFunction) Equals(_ ast.LoxValue) bool { return false }
-func (f NativeFunction) Call(i *Interpreter, arguments []ast.LoxValue) ast.LoxValue {
+func (*NativeFunction) TypeName() string { return "native function" }
+func (f *NativeFunction) String() string { return "<native fn>" }
+func (f *NativeFunction) Name() string   { return f.name }
+func (f *NativeFunction) Call(i *Interpreter, arguments []value.Value) value.Value {
 	return f.code(i, arguments)
 }
-func (f NativeFunction) Arity() int { return f.arity }
+func (f *NativeFunction) Arity() int { return f.arity }
 
-var builtinNativeFunctions = []NativeFunction{
+// Pointers, so that == on Lox values is identity (a struct holding a func is not comparable).
+var builtinNativeFunctions = []*NativeFunction{
 	{
 		name:  "clock",
 		arity: 0,
-		code: func(*Interpreter, []ast.LoxValue) ast.LoxValue {
-			return ast.NewNumberValue(float64(time.Now().Unix()))
+		code: func(*Interpreter, []value.Value) value.Value {
+			return value.Number(float64(time.Now().Unix()))
 		},
 	},
 	{
 		name:  "getchar",
 		arity: 0,
-		code: func(*Interpreter, []ast.LoxValue) ast.LoxValue {
+		code: func(*Interpreter, []value.Value) value.Value {
 			// FIXME: terminates the REPL mode
 			var buffer [1]byte
 			bytesRead, err := os.Stdin.Read(buffer[:])
 			if bytesRead == 0 || err != nil {
-				return ast.NewNumberValue(-1)
+				return value.Number(-1)
 			}
 
-			return ast.NewNumberValue(float64(int(buffer[0])))
+			return value.Number(float64(int(buffer[0])))
 		},
 	},
 }
