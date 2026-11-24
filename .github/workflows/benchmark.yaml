@@ -1,0 +1,47 @@
+name: benchmark
+on:
+  pull_request:
+    paths:
+      - go/**
+      - benchmark/**
+      - .github/workflows/benchmark.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: head
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: oldstable
+          cache-dependency-path: head/go/go.sum
+      - name: Benchmark base
+        working-directory: base/go
+        run: go generate ./... && go test ./cmd/glox -run='^$' -bench=. -count=6 -timeout=30m > ../../base.txt
+      - name: Benchmark PR
+        working-directory: head/go
+        run: go generate ./... && go test ./cmd/glox -run='^$' -bench=. -count=6 -timeout=30m > ../../head.txt
+      - name: Compare
+        working-directory: head/go
+        run: |
+          {
+            echo '```'
+            go tool benchstat base=../../base.txt pr=../../head.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

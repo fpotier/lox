@@ -1,42 +1,41 @@
+version: "2"
+
 run:
-  timeout: 30m
-  tests: true
-output:
-  formats:
-    - format: colored-line-number
-      path: stderr
-  print-issued-lines: true
-linters-settings:
-  gomnd:
-    ignored-files:
-      - 'ast/limits\.go$'
+  timeout: 5m
+
 linters:
-  enable-all: true
+  default: all
   disable:
     - cyclop
     - depguard
-    - exhaustive # Buggy
+    - exhaustive
+    - exhaustruct # deprecated, replaced by exhaustruct_v5
     - forbidigo
     - forcetypeassert
+    - funcorder
     - funlen
     - gochecknoglobals
+    - godoclint
     - godot
     - godox
-    - gofumpt
+    - gomodguard # deprecated, replaced by gomodguard_v2
+    - iface
     - interfacebloat
-    - interfacer
     - ireturn
     - nlreturn
+    - noinlineerr
     - nonamedreturns
     - varnamelen
     - wrapcheck
     - wsl
-issues:
-  exclude-rules:
-    - path: .*generated-errors\.go
-      linters:
-        - goconst
-        - gofmt
-        - goimports
-        - gosimple
-        - perfsprint
+    - wsl_v5
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - std-error-handling
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

@@ -65,7 +65,7 @@ func (e *Environment) AssignAt(distance int, name lexer.Token, value ast.LoxValu
 
 func (e *Environment) ancestor(distance int) *Environment {
 	env := e
-	for i := 0; i < distance; i++ {
+	for range distance {
 		env = env.enclosing
 	}
 
