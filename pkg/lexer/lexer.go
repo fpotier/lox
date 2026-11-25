@@ -5,7 +5,7 @@ package lexer
 import (
 	"strconv"
 
-	"github.com/fpotier/lox/go/pkg/loxerror"
+	"github.com/fpotier/lox/pkg/loxerror"
 )
 
 type Lexer struct {

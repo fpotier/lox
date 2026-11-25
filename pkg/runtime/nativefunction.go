@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/pkg/ast"
 )
 
 type NativeFunction struct {

@@ -1,4 +1,4 @@
-module github.com/fpotier/lox/go
+module github.com/fpotier/lox
 
 go 1.26.0
 

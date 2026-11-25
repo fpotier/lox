@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/fpotier/lox/go/pkg/lexer"
+import "github.com/fpotier/lox/pkg/lexer"
 
 func NewAssignmentExpression(name lexer.Token, value Expression) *AssignmentExpression {
 	return &AssignmentExpression{

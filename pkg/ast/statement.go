@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/fpotier/lox/go/pkg/lexer"
+import "github.com/fpotier/lox/pkg/lexer"
 
 func NewBlockStatement(statements []Statement) *BlockStatement {
 	return &BlockStatement{

@@ -2,7 +2,10 @@ name: benchmark
 on:
   pull_request:
     paths:
-      - go/**
+      - "**.go"
+      - go.mod
+      - go.sum
+      - .golangci.yaml
       - benchmark/**
       - .devcontainer/**
       - .github/workflows/benchmark.yaml
@@ -48,9 +51,9 @@ jobs:
             bench() {
               (cd "$1" && go generate ./... && go test ./cmd/glox -run='^$' -bench=. -count=6 -timeout=30m)
             }
-            bench .bench-base/go > base.txt
-            bench go > head.txt
-            (cd go && go tool benchstat base=../base.txt pr=../head.txt) > benchstat.txt
+            bench .bench-base > base.txt
+            bench . > head.txt
+            go tool benchstat base=base.txt pr=head.txt > benchstat.txt
       - name: Publish comparison
         run: |
           {

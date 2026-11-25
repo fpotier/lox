@@ -1,8 +1,8 @@
 package runtime
 
 import (
-	"github.com/fpotier/lox/go/pkg/ast"
-	"github.com/fpotier/lox/go/pkg/lexer"
+	"github.com/fpotier/lox/pkg/ast"
+	"github.com/fpotier/lox/pkg/lexer"
 )
 
 type Environment struct {

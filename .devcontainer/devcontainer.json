@@ -3,5 +3,5 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "postCreateCommand": "cd go && go mod download && go generate ./..."
+  "postCreateCommand": "go mod download && go generate ./..."
 }

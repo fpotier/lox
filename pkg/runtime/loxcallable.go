@@ -1,6 +1,6 @@
 package runtime
 
-import "github.com/fpotier/lox/go/pkg/ast"
+import "github.com/fpotier/lox/pkg/ast"
 
 type LoxCallable interface {
 	Call(interpreter *Interpreter, arguments []ast.LoxValue) ast.LoxValue

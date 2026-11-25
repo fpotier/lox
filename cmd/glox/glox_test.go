@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/diff"
 )
 
-const TestDirectory = "../../../test/official_tests"
-const BenchmarkDirectory = "../../../benchmark/official_benchmarks"
+const TestDirectory = "../../test/official_tests"
+const BenchmarkDirectory = "../../benchmark/official_benchmarks"
 
 var testedDirectories = [...]string{
 	".",

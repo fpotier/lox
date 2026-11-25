@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/fpotier/lox/go/pkg/ast"
-	"github.com/fpotier/lox/go/pkg/lexer"
-	"github.com/fpotier/lox/go/pkg/loxerror"
+	"github.com/fpotier/lox/pkg/ast"
+	"github.com/fpotier/lox/pkg/lexer"
+	"github.com/fpotier/lox/pkg/loxerror"
 )
 
 type Interpreter struct {

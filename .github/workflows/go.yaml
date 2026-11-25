@@ -4,13 +4,19 @@ on:
     branches:
       - main
     paths:
-      - go/**
+      - "**.go"
+      - go.mod
+      - go.sum
+      - .golangci.yaml
       - test/**
       - .devcontainer/**
       - .github/workflows/**
   pull_request:
     paths:
-      - go/**
+      - "**.go"
+      - go.mod
+      - go.sum
+      - .golangci.yaml
       - test/**
       - .devcontainer/**
       - .github/workflows/**
@@ -48,7 +54,6 @@ jobs:
           push: never
           runCmd: |
             set -euo pipefail
-            cd go
             go generate ./...
             go tool actionlint -color
             golangci-lint run ./...
@@ -77,7 +82,6 @@ jobs:
           eventFilterForPush: push
           runCmd: |
             set -euo pipefail
-            cd go
             go mod tidy -diff
             go generate ./...
             for toolchain in local "go$GO_OLDSTABLE"; do

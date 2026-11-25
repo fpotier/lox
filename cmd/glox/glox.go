@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/fpotier/lox/go/pkg/lexer"
-	"github.com/fpotier/lox/go/pkg/loxerror"
-	"github.com/fpotier/lox/go/pkg/parser"
-	"github.com/fpotier/lox/go/pkg/runtime"
+	"github.com/fpotier/lox/pkg/lexer"
+	"github.com/fpotier/lox/pkg/loxerror"
+	"github.com/fpotier/lox/pkg/parser"
+	"github.com/fpotier/lox/pkg/runtime"
 	"github.com/sean-/sysexits"
 )
 

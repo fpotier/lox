@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/fpotier/lox/go/pkg/ast"
+	"github.com/fpotier/lox/pkg/ast"
 )
 
 type LoxFunction struct {
